@@ -75,10 +75,10 @@
 
 
 
-      /*
-        torus
-      */
-      var torusData = this.torus(32, 32, 1.0, 2.0);
+      /**
+       *torus
+       */
+      var torusData = this.torus(64, 64, 0.5, 1.5);
       var position = torusData[0];
       var normal = torusData[1];
       var color = torusData[2];
@@ -98,6 +98,21 @@
 
 
 
+      /**
+       * 球体
+       */
+      // var sphereData = this.sphere(64, 64, 2.0, [0.25, 0.25, 0.75, 1.0]);
+      // var sVBO = [
+      //   this.createVBO(sphereData.p),
+      //   this.createVBO(sphereData.n),
+      //   this.createVBO(sphereData.c)
+      // ];
+      // this.setAttribute(sVBO, attrLocation, attrStride);
+      // var sIBO = this.createIBO(sphereData.i);
+      // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sIBO);
+      // this.sphereIndex = sphereData.i;
+
+
 
       var vMat = mat4.create();
       var pMat = mat4.create();
@@ -109,20 +124,21 @@
       // pv座標
       mat4.mul(this.tmpMat, pMat, vMat);
 
-      // this.main();
+      this.main();
     },
 
     main: function() {
       var count = 0
       var uniLocation = {
         mvpMatrix: gl.getUniformLocation(this.prg, 'mvpMatrix'),
+        mMatrix: gl.getUniformLocation(this.prg, 'mMatrix'),
         invMatrix: gl.getUniformLocation(this.prg, 'invMatrix'),
-        lightDirection: gl.getUniformLocation(this.prg, 'lightDirection'),
+        lightPosition: gl.getUniformLocation(this.prg, 'lightPosition'),
         ambientColor: gl.getUniformLocation(this.prg, 'ambientColor'),
         eyeDirection: gl.getUniformLocation(this.prg, 'eyeDirection')
       };
-      // 平行光源の向き
-      var lightDirection = [-0.5, 0.5, 0.5];
+      // 点光源の位置
+      var lightPosition = [0.0, 0.0, 0.0];
       // 環境光の色
       var ambientColor = [0.1, 0.1, 0.1, 1.0];
       // 視点ベクトル
@@ -131,6 +147,7 @@
       var invMat = mat4.create();
       var tmpMat = this.tmpMat;
       var index = this.index;
+      var sphereIndex = this.sphereIndex;
 
       function loop() {
         var mMat = mat4.create();
@@ -140,19 +157,38 @@
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         count++;
         var rad = (count % 360) * Math.PI / 180;
-        var x = Math.cos(rad);
-        var y = Math.sin(rad);
+        var x = Math.cos(rad) * 3.5;
+        var y = Math.sin(rad) * 3.5;
+        var z = Math.sin(rad) * 3.5;
+
+
+        gl.uniform3fv(uniLocation.lightPosition, lightPosition);
+        gl.uniform3fv(uniLocation.eyeDirection, eyeDirection);
+        gl.uniform4fv(uniLocation.ambientColor, ambientColor);
+
+
 
         // torus
-        mat4.rotate(mMat, mMat, rad, [0, 1, 1]);
+        mat4.translate(mMat, mMat, [x, -y, -z]);
+        mat4.rotate(mMat, mMat, -rad, [0, 1, 1]);
         mat4.mul(mvpMat, tmpMat, mMat);
         mat4.invert(invMat, mMat);
         gl.uniformMatrix4fv(uniLocation.mvpMatrix, false, mvpMat);
+        gl.uniformMatrix4fv(uniLocation.mMatrix, false, mMat);
         gl.uniformMatrix4fv(uniLocation.invMatrix, false, invMat);
-        gl.uniform3fv(uniLocation.lightDirection, lightDirection);
-        gl.uniform3fv(uniLocation.eyeDirection, eyeDirection);
-        gl.uniform4fv(uniLocation.ambientColor, ambientColor);
+
         gl.drawElements(gl.TRIANGLES, index.length, gl.UNSIGNED_SHORT, 0);
+
+
+        // sphere
+        // mat4.identity(mMat);
+        // mat4.translate(mMat, mMat, [-x, y, z]);
+        // mat4.mul(mvpMat, tmpMat, mMat);
+        // mat4.invert(invMat, mMat);
+        // gl.uniformMatrix4fv(uniLocation.mvpMatrix, false, mvpMat);
+        // gl.uniformMatrix4fv(uniLocation.mMatrix, false, mMat);
+        // gl.uniformMatrix4fv(uniLocation.invMatrix, false, invMat);
+        // gl.drawElements(gl.TRIANGLES, sphereIndex.length, gl.UNSIGNED_SHORT, 0);
 
         // model1
         // mat4.translate(mMat, mMat, [x, y + 1.0, 0.0]);
@@ -222,6 +258,50 @@
         }
       }
       return [position, normal, color, index];
+    },
+
+
+    // 球体
+    sphere: function(row, column, rad, color) {
+      var pos = [];
+      var nor = [];
+      var col = [];
+      var idx = [];
+
+      for(var i = 0; i <= row; i++) {
+        var r = Math.PI / row * i;
+        var ry = Math.cos(r);
+        var rr = Math.sin(r);
+        for(var ii = 0; ii <= column; ii++){
+          var tr = Math.PI * 2 / column * ii;
+          var tx = rr * rad * Math.cos(tr);
+          var ty = ry * rad;
+          var tz = rr * rad * Math.sin(tr);
+          var rx = rr * Math.cos(tr);
+          var rz = rr * Math.sin(tr);
+
+          if(color) {
+            var tc = color;
+
+          } else {
+            tc = hsva(360 / row * i, 1, 1, 1);
+          }
+          pos.push(tx, ty, tz);
+          nor.push(rx, ry, rz);
+          col.push(tc[0], tc[1], tc[2], tc[3]);
+        }
+      }
+
+      r = 0;
+
+      for(i = 0; i < row; i++) {
+        for(ii = 0; ii < column; ii++) {
+          r = (column + 1) * i + ii;
+          idx.push(r, r + 1, r + column + 2);
+          idx.push(r, r + column + 2, r + column + 1);
+        }
+      }
+      return {p : pos, n : nor, c : col, i : idx};
     },
 
 
