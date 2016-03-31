@@ -75,6 +75,34 @@
 
 
 
+      /**
+       * texture
+       */
+      var position = [
+        -1.0,  1.0,  0.0,
+         1.0,  1.0,  0.0,
+        -1.0, -1.0,  0.0,
+         1.0, -1.0,  0.0
+      ];
+
+      var color = [
+        1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0,
+      ];
+
+      var index = [
+        0, 1, 2,
+        3, 2, 1
+      ];
+
+      var vPosition = this.createVBO(position);
+      var vColor = this.createVBO(color);
+      var vTextureCoord = this.createVBO(textureCoord);
+      var VBOList = [vPosition, vColor, vTextureCoord];
+      var iIndex = this.createIBO(index);
+
 
 
 
@@ -141,15 +169,7 @@
         self.attrStride[2] = 4;
 
 
-        /**
-         * texture
-         */
-        var position = [
-          -1.0,  1.0,  0.0,
-           1.0,  1.0,  0.0,
-          -1.0, -1.0,  0.0,
-           1.0, -1.0,  0.0
-        ];
+
 
 
 
@@ -159,59 +179,59 @@
         /**
          * torus
          */
-        var torusData = self.torus(64, 64, 0.5, 1.5);
-        var position = torusData[0];
-        var normal = torusData[1];
-        var color = torusData[2];
-        self.index = torusData[3];
-        self.vbo[0] = self.createVBO(position);
-        self.vbo[1] = self.createVBO(normal);
-        self.vbo[2] = self.createVBO(color);
-        self.setAttribute(self.vbo, self.attrLocation, self.attrStride);
-        var ibo = self.createIBO(self.index);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+        // var torusData = self.torus(64, 64, 0.5, 1.5);
+        // var position = torusData[0];
+        // var normal = torusData[1];
+        // var color = torusData[2];
+        // self.index = torusData[3];
+        // self.vbo[0] = self.createVBO(position);
+        // self.vbo[1] = self.createVBO(normal);
+        // self.vbo[2] = self.createVBO(color);
+        // self.setAttribute(self.vbo, self.attrLocation, self.attrStride);
+        // var ibo = self.createIBO(self.index);
+        // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
 
 
 
         // torus
-        mat4.translate(mMat, mMat, [x, -y, -z]);
-        mat4.rotate(mMat, mMat, -rad, [0, 1, 1]);
-        mat4.mul(mvpMat, tmpMat, mMat);
-        mat4.invert(invMat, mMat);
-        gl.uniformMatrix4fv(uniLocation.mvpMatrix, false, mvpMat);
-        gl.uniformMatrix4fv(uniLocation.mMatrix, false, mMat);
-        gl.uniformMatrix4fv(uniLocation.invMatrix, false, invMat);
+        // mat4.translate(mMat, mMat, [x, -y, -z]);
+        // mat4.rotate(mMat, mMat, -rad, [0, 1, 1]);
+        // mat4.mul(mvpMat, tmpMat, mMat);
+        // mat4.invert(invMat, mMat);
+        // gl.uniformMatrix4fv(uniLocation.mvpMatrix, false, mvpMat);
+        // gl.uniformMatrix4fv(uniLocation.mMatrix, false, mMat);
+        // gl.uniformMatrix4fv(uniLocation.invMatrix, false, invMat);
 
-        gl.drawElements(gl.TRIANGLES, self.index.length, gl.UNSIGNED_SHORT, 0);
+        // gl.drawElements(gl.TRIANGLES, self.index.length, gl.UNSIGNED_SHORT, 0);
 
 
 
         /**
          * sphere
          */
-        var sphereData = self.sphere(64, 64, 2.0, [0.25, 0.25, 0.75, 1.0]);
-        var sVBO = [
-          self.createVBO(sphereData.p),
-          self.createVBO(sphereData.n),
-          self.createVBO(sphereData.c)
-        ];
-        self.setAttribute(sVBO, self.attrLocation, self.attrStride);
-        var sIBO = self.createIBO(sphereData.i);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sIBO);
-        self.sphereIndex = sphereData.i;
+        // var sphereData = self.sphere(64, 64, 2.0, [0.25, 0.25, 0.75, 1.0]);
+        // var sVBO = [
+        //   self.createVBO(sphereData.p),
+        //   self.createVBO(sphereData.n),
+        //   self.createVBO(sphereData.c)
+        // ];
+        // self.setAttribute(sVBO, self.attrLocation, self.attrStride);
+        // var sIBO = self.createIBO(sphereData.i);
+        // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sIBO);
+        // self.sphereIndex = sphereData.i;
 
 
 
 
-        // sphere
-        mat4.identity(mMat);
-        mat4.translate(mMat, mMat, [-x, y, z]);
-        mat4.mul(mvpMat, tmpMat, mMat);
-        mat4.invert(invMat, mMat);
-        gl.uniformMatrix4fv(uniLocation.mvpMatrix, false, mvpMat);
-        gl.uniformMatrix4fv(uniLocation.mMatrix, false, mMat);
-        gl.uniformMatrix4fv(uniLocation.invMatrix, false, invMat);
-        gl.drawElements(gl.TRIANGLES, self.sphereIndex.length, gl.UNSIGNED_SHORT, 0);
+        // // sphere
+        // mat4.identity(mMat);
+        // mat4.translate(mMat, mMat, [-x, y, z]);
+        // mat4.mul(mvpMat, tmpMat, mMat);
+        // mat4.invert(invMat, mMat);
+        // gl.uniformMatrix4fv(uniLocation.mvpMatrix, false, mvpMat);
+        // gl.uniformMatrix4fv(uniLocation.mMatrix, false, mMat);
+        // gl.uniformMatrix4fv(uniLocation.invMatrix, false, invMat);
+        // gl.drawElements(gl.TRIANGLES, self.sphereIndex.length, gl.UNSIGNED_SHORT, 0);
 
         // model1
         // mat4.translate(mMat, mMat, [x, y + 1.0, 0.0]);
@@ -435,7 +455,7 @@
     },
 
 
-    createTexture(src): function() {
+    createTexture: function(src) {
       var img = new Image();
 
       img.onload = function() {
