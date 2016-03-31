@@ -24,9 +24,9 @@
       this.prg = this.createProgram(vs, fs);
 
       // attributeの設定
-      var vbo = [];
-      var attrLocation = [];
-      var attrStride = [];
+      this. vbo = [];
+      this.attrLocation = [];
+      this.attrStride = [];
 
 
 
@@ -75,42 +75,8 @@
 
 
 
-      /**
-       *torus
-       */
-      var torusData = this.torus(64, 64, 0.5, 1.5);
-      var position = torusData[0];
-      var normal = torusData[1];
-      var color = torusData[2];
-      this.index = torusData[3];
-      vbo[0] = this.createVBO(position);
-      vbo[1] = this.createVBO(normal);
-      vbo[2] = this.createVBO(color);
-      attrLocation[0] = gl.getAttribLocation(this.prg, 'position');
-      attrLocation[1] = gl.getAttribLocation(this.prg, 'normal');
-      attrLocation[2] = gl.getAttribLocation(this.prg, 'color');
-      attrStride[0] = 3;
-      attrStride[1] = 3;
-      attrStride[2] = 4;
-      this.setAttribute(vbo, attrLocation, attrStride);
-      var ibo = this.createIBO(this.index);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
 
 
-
-      /**
-       * 球体
-       */
-      // var sphereData = this.sphere(64, 64, 2.0, [0.25, 0.25, 0.75, 1.0]);
-      // var sVBO = [
-      //   this.createVBO(sphereData.p),
-      //   this.createVBO(sphereData.n),
-      //   this.createVBO(sphereData.c)
-      // ];
-      // this.setAttribute(sVBO, attrLocation, attrStride);
-      // var sIBO = this.createIBO(sphereData.i);
-      // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sIBO);
-      // this.sphereIndex = sphereData.i;
 
 
 
@@ -128,6 +94,7 @@
     },
 
     main: function() {
+      var self = this;
       var count = 0
       var uniLocation = {
         mvpMatrix: gl.getUniformLocation(this.prg, 'mvpMatrix'),
@@ -166,6 +133,44 @@
         gl.uniform3fv(uniLocation.eyeDirection, eyeDirection);
         gl.uniform4fv(uniLocation.ambientColor, ambientColor);
 
+        self.attrLocation[0] = gl.getAttribLocation(self.prg, 'position');
+        self.attrLocation[1] = gl.getAttribLocation(self.prg, 'textureCoord');
+        self.attrLocation[2] = gl.getAttribLocation(self.prg, 'color');
+        self.attrStride[0] = 3;
+        self.attrStride[1] = 2;
+        self.attrStride[2] = 4;
+
+
+        /**
+         * texture
+         */
+        var position = [
+          -1.0,  1.0,  0.0,
+           1.0,  1.0,  0.0,
+          -1.0, -1.0,  0.0,
+           1.0, -1.0,  0.0
+        ];
+
+
+
+
+
+
+        /**
+         * torus
+         */
+        var torusData = self.torus(64, 64, 0.5, 1.5);
+        var position = torusData[0];
+        var normal = torusData[1];
+        var color = torusData[2];
+        self.index = torusData[3];
+        self.vbo[0] = self.createVBO(position);
+        self.vbo[1] = self.createVBO(normal);
+        self.vbo[2] = self.createVBO(color);
+        self.setAttribute(self.vbo, self.attrLocation, self.attrStride);
+        var ibo = self.createIBO(self.index);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+
 
 
         // torus
@@ -177,18 +182,36 @@
         gl.uniformMatrix4fv(uniLocation.mMatrix, false, mMat);
         gl.uniformMatrix4fv(uniLocation.invMatrix, false, invMat);
 
-        gl.drawElements(gl.TRIANGLES, index.length, gl.UNSIGNED_SHORT, 0);
+        gl.drawElements(gl.TRIANGLES, self.index.length, gl.UNSIGNED_SHORT, 0);
+
+
+
+        /**
+         * sphere
+         */
+        var sphereData = self.sphere(64, 64, 2.0, [0.25, 0.25, 0.75, 1.0]);
+        var sVBO = [
+          self.createVBO(sphereData.p),
+          self.createVBO(sphereData.n),
+          self.createVBO(sphereData.c)
+        ];
+        self.setAttribute(sVBO, self.attrLocation, self.attrStride);
+        var sIBO = self.createIBO(sphereData.i);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sIBO);
+        self.sphereIndex = sphereData.i;
+
+
 
 
         // sphere
-        // mat4.identity(mMat);
-        // mat4.translate(mMat, mMat, [-x, y, z]);
-        // mat4.mul(mvpMat, tmpMat, mMat);
-        // mat4.invert(invMat, mMat);
-        // gl.uniformMatrix4fv(uniLocation.mvpMatrix, false, mvpMat);
-        // gl.uniformMatrix4fv(uniLocation.mMatrix, false, mMat);
-        // gl.uniformMatrix4fv(uniLocation.invMatrix, false, invMat);
-        // gl.drawElements(gl.TRIANGLES, sphereIndex.length, gl.UNSIGNED_SHORT, 0);
+        mat4.identity(mMat);
+        mat4.translate(mMat, mMat, [-x, y, z]);
+        mat4.mul(mvpMat, tmpMat, mMat);
+        mat4.invert(invMat, mMat);
+        gl.uniformMatrix4fv(uniLocation.mvpMatrix, false, mvpMat);
+        gl.uniformMatrix4fv(uniLocation.mMatrix, false, mMat);
+        gl.uniformMatrix4fv(uniLocation.invMatrix, false, invMat);
+        gl.drawElements(gl.TRIANGLES, self.sphereIndex.length, gl.UNSIGNED_SHORT, 0);
 
         // model1
         // mat4.translate(mMat, mMat, [x, y + 1.0, 0.0]);
@@ -409,7 +432,37 @@
       }
 
       return color;
+    },
+
+
+    createTexture(src): function() {
+      var img = new Image();
+
+      img.onload = function() {
+        var tex = gl.createTexture();
+
+        // texをバインド
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+
+        // imgのバインド
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+
+        // ミップマップを生成
+        gl.generateMipmap(gl.TEXTURE_2D);
+
+        // textureのバインドをリセット
+        gl.bindTexture(gl.TEXTURE_2D, null);
+
+        texture = tex;
+      };
+
+      img.src = src;
+
     }
+
+
+
+
   };
 
   this.sketch.init();
