@@ -1,13 +1,14 @@
 (function(){
+  _.cloneDeep([]);
   var c = document.getElementById('canvas');
   c.width = 500;
   c.height = 300;
-  var gl = c.getContext('webgl');
-
+  var gl = c.getContext('webgl2');
 
   this.sketch = {
 
     init: function() {
+      var self = this;
       gl.clearColor(0, 0, 0, 1.0);
       gl.clearDepth(1.0);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -16,193 +17,93 @@
       gl.enable(gl.DEPTH_TEST);
       // 深度テスト評価手法設定
       gl.depthFunc(gl.LEQUAL);
-      // カリング有効化
-      gl.enable(gl.CULL_FACE);
+      // // カリング有効化
+      // gl.enable(gl.CULL_FACE);
 
       var vs = this.createShader('vs');
       var fs = this.createShader('fs');
       this.prg = this.createProgram(vs, fs);
 
-      // attributeの設定
-      this. vbo = [];
-      this.attrLocation = [];
-      this.attrStride = [];
+      this.attrLocation = {
+        position: gl.getAttribLocation(this.prg, 'position'),
+        color: gl.getAttribLocation(this.prg, 'color')
+      };
 
+      this.square = this.createSquare();
 
+      var hoge = gl.getAttribLocation(this.prg, 'position');
+      var fuga = gl.getAttribLocation(this.prg, 'color');
+      var torusData = self.torus(64, 64, 0.5, 1.5);
+      var position = torusData[0];
+      var normal = torusData[1];
+      var color = torusData[2];
+      self.index = torusData[3];
+      this.aaa = [hoge, fuga];
+      self.vbo = [];
+      self.vbo[0] = self.createVBO(position);
+      self.vbo[1] = self.createVBO(color);
+      self.attrStride = [3, 4];
+      self.setAttribute(self.vbo, this.aaa, self.attrStride);
+      self.ibo = self.createIBO(self.index);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.ibo);
 
-
-      /*
-        ----- 三角形 ------
-      */
-      // 頂点の設定
-      // attrLocation[0] = gl.getAttribLocation(this.prg, 'position');
-      // // xyz === 3
-      // attrStride[0] = 3;
-      // var vPosition = [
-      //   0.0, 1.0, 0.0,
-      //   1.0, 0.0, 0.0,
-      //   -1.0, 0.0, 0.0,
-      //   0.0, -1.0, 0.0
-      // ];
-      // vbo[0] = this.createVBO(vPosition);
-
-      // // colorの設定
-      // attrLocation[1] = gl.getAttribLocation(this.prg, 'color');
-      // // rgba === 4
-      // attrStride[1] = 4;
-      // var vColor = [
-      //   1.0, 0.0, 0.0, 1.0,
-      //   0.0, 1.0, 0.0, 1.0,
-      //   0.0, 0,0, 1.0, 1.0,
-      //   1.0, 1.0, 1.0, 1.0
-      // ];
-      // vbo[1] = this.createVBO(vColor);
-
-      // // attributeの登録
-      // this.setAttribute(vbo, attrLocation, attrStride);
-
-      // // ibo
-      // this.index = [
-      //   0, 1, 2,
-      //   1, 2, 3
-      // ];
-      // var ibo = this.createIBO(this.index);
-      // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
-      /*
-        ------ 三角形ここまで -------
-      */
-
-
-
-
-      /**
-       * texture
-       */
-      var position = [
-        -1.0,  1.0,  0.0,
-         1.0,  1.0,  0.0,
-        -1.0, -1.0,  0.0,
-         1.0, -1.0,  0.0
-      ];
-
-      var color = [
-        1.0, 1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0, 1.0,
-      ];
-
-      var index = [
-        0, 1, 2,
-        3, 2, 1
-      ];
-
-      var vPosition = this.createVBO(position);
-      var vColor = this.createVBO(color);
-      var vTextureCoord = this.createVBO(textureCoord);
-      var VBOList = [vPosition, vColor, vTextureCoord];
-      var iIndex = this.createIBO(index);
-
-
-
-
-
-
-      var vMat = mat4.create();
-      var pMat = mat4.create();
-      this.tmpMat = mat4.create();
+      var vMatrix = mat4.create();
+      var pMatrix = mat4.create();
+      this.tmpMatrix = mat4.create();
       // projection座標変換
-      mat4.perspective(pMat, 45, c.width / c.height, 0.1, 100);
+      mat4.perspective(pMatrix, 45, c.width / c.height, 0.1, 100);
       // view座標変換
-      mat4.lookAt(vMat, [0.0, 0.0, 10.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+      mat4.lookAt(vMatrix, [0.0, 0.0, 5.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
       // pv座標
-      mat4.mul(this.tmpMat, pMat, vMat);
+      mat4.mul(this.tmpMatrix, pMatrix, vMatrix);
 
       this.main();
     },
+
 
     main: function() {
       var self = this;
       var count = 0
       var uniLocation = {
         mvpMatrix: gl.getUniformLocation(this.prg, 'mvpMatrix'),
-        mMatrix: gl.getUniformLocation(this.prg, 'mMatrix'),
-        invMatrix: gl.getUniformLocation(this.prg, 'invMatrix'),
-        lightPosition: gl.getUniformLocation(this.prg, 'lightPosition'),
-        ambientColor: gl.getUniformLocation(this.prg, 'ambientColor'),
-        eyeDirection: gl.getUniformLocation(this.prg, 'eyeDirection')
       };
-      // 点光源の位置
-      var lightPosition = [0.0, 0.0, 0.0];
-      // 環境光の色
-      var ambientColor = [0.1, 0.1, 0.1, 1.0];
-      // 視点ベクトル
-      var eyeDirection = [0.0, 0.0, 20.0];
-      var mvpMat = mat4.create();
-      var invMat = mat4.create();
-      var tmpMat = this.tmpMat;
-      var index = this.index;
-      var sphereIndex = this.sphereIndex;
+      var mvpMatrix = mat4.create();
+      var tmpMatrix = this.tmpMatrix;
+      var invMatrix = mat4.create();
+
+
 
       function loop() {
-        var mMat = mat4.create();
+        var mMatrix = mat4.create();
 
         gl.clearColor(0, 0, 0, 1.0);
         gl.clearDepth(1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
         count++;
         var rad = (count % 360) * Math.PI / 180;
-        var x = Math.cos(rad) * 3.5;
-        var y = Math.sin(rad) * 3.5;
-        var z = Math.sin(rad) * 3.5;
+        var x = Math.cos(rad) * 1.5;
+        var y = Math.sin(rad) * 1.5;
+        var z = Math.sin(rad) * 1.5;
 
-
-        gl.uniform3fv(uniLocation.lightPosition, lightPosition);
-        gl.uniform3fv(uniLocation.eyeDirection, eyeDirection);
-        gl.uniform4fv(uniLocation.ambientColor, ambientColor);
-
-        self.attrLocation[0] = gl.getAttribLocation(self.prg, 'position');
-        self.attrLocation[1] = gl.getAttribLocation(self.prg, 'textureCoord');
-        self.attrLocation[2] = gl.getAttribLocation(self.prg, 'color');
-        self.attrStride[0] = 3;
-        self.attrStride[1] = 2;
-        self.attrStride[2] = 4;
-
-
-
-
-
-
-
-
-
-        /**
-         * torus
-         */
-        // var torusData = self.torus(64, 64, 0.5, 1.5);
-        // var position = torusData[0];
-        // var normal = torusData[1];
-        // var color = torusData[2];
-        // self.index = torusData[3];
-        // self.vbo[0] = self.createVBO(position);
-        // self.vbo[1] = self.createVBO(normal);
-        // self.vbo[2] = self.createVBO(color);
-        // self.setAttribute(self.vbo, self.attrLocation, self.attrStride);
-        // var ibo = self.createIBO(self.index);
-        // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
-
-
+        mat4.rotate(mMatrix, mMatrix, rad, [0, 1, 0]);
+        mat4.mul(mvpMatrix, tmpMatrix, mMatrix);
+        gl.uniformMatrix4fv(uniLocation.mvpMatrix, false, mvpMatrix);
+        gl.bindVertexArray(self.square.vao);
+        gl.drawElements(gl.TRIANGLES, self.square.index.length, gl.UNSIGNED_SHORT, 0);
+        gl.bindVertexArray(null);
 
         // torus
-        // mat4.translate(mMat, mMat, [x, -y, -z]);
-        // mat4.rotate(mMat, mMat, -rad, [0, 1, 1]);
-        // mat4.mul(mvpMat, tmpMat, mMat);
-        // mat4.invert(invMat, mMat);
-        // gl.uniformMatrix4fv(uniLocation.mvpMatrix, false, mvpMat);
-        // gl.uniformMatrix4fv(uniLocation.mMatrix, false, mMat);
-        // gl.uniformMatrix4fv(uniLocation.invMatrix, false, invMat);
-
-        // gl.drawElements(gl.TRIANGLES, self.index.length, gl.UNSIGNED_SHORT, 0);
+        mat4.translate(mMatrix, mMatrix, [x, -y, -z]);
+        mat4.rotate(mMatrix, mMatrix, -rad, [0, 1, 1]);
+        mat4.mul(mvpMatrix, tmpMatrix, mMatrix);
+        mat4.invert(invMatrix, mMatrix);
+        gl.uniformMatrix4fv(uniLocation.mvpMatrix, false, mvpMatrix);
+        gl.uniformMatrix4fv(uniLocation.mMatrix, false, mMatrix);
+        gl.uniformMatrix4fv(uniLocation.invMatrix, false, invMatrix);
+        self.setAttribute(self.vbo, self.aaa, self.attrStride);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.ibo);
+        gl.drawElements(gl.TRIANGLES, self.index.length, gl.UNSIGNED_SHORT, 0);
 
 
 
@@ -216,8 +117,8 @@
         //   self.createVBO(sphereData.c)
         // ];
         // self.setAttribute(sVBO, self.attrLocation, self.attrStride);
-        // var sIBO = self.createIBO(sphereData.i);
-        // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sIBO);
+        // var sd = self.created(sphereData.i);
+        // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sd);
         // self.sphereIndex = sphereData.i;
 
 
@@ -233,37 +134,87 @@
         // gl.uniformMatrix4fv(uniLocation.invMatrix, false, invMat);
         // gl.drawElements(gl.TRIANGLES, self.sphereIndex.length, gl.UNSIGNED_SHORT, 0);
 
-        // model1
-        // mat4.translate(mMat, mMat, [x, y + 1.0, 0.0]);
-        // mat4.mul(mvpMat, tmpMat, mMat);
-        // gl.uniformMatrix4fv(uniLocation, false, mvpMat);
-        // gl.drawElements(gl.TRIANGLES, index.length, gl.UNSIGNED_SHORT, 0);
-
-        // model2
-        // mat4.identity(mMat);
-        // mat4.translate(mMat, mMat, [1.0, -1.0, 0.0]);
-        // mat4.rotate(mMat, mMat, rad, [0, 1, 0]);
-        // mat4.mul(mvpMat, tmpMat, mMat);
-        // gl.uniformMatrix4fv(uniLocation, false, mvpMat);
-        // gl.drawArrays(gl.TRIANGLES, 0, 3);
-
-        // // // model3
-        // var s = Math.sin(rad) + 1.0;
-        // mat4.identity(mMat);
-        // mat4.translate(mMat, mMat, [-1.0, -1.0, 0.0]);
-        // mat4.scale(mMat, mMat, [s, s, 0.0]);
-        // mat4.mul(mvpMat, tmpMat, mMat);
-        // gl.uniformMatrix4fv(uniLocation, false, mvpMat);
-        // gl.drawArrays(gl.TRIANGLES, 0, 3);
-
-
-
         gl.flush();
         requestAnimationFrame(loop);
       }
 
       loop();
     },
+
+
+
+    createSquare: function() {
+      var index = [
+        0, 1, 2,
+        1, 2, 3
+      ];
+
+      var attribute = {
+        position: {
+          location: this.attrLocation.position,
+          stride: 3,
+          data: [
+             0.0, 1.0, 0.0,
+             1.0, 0.0, 0.0,
+            -1.0, 0.0, 0.0,
+             0.0, -1.0, 0.0
+          ]
+        },
+        color: {
+          location: this.attrLocation.color,
+          stride: 4,
+          data: [
+            1.0, 0.0, 0.0, 1.0,
+            0.0, 1.0, 0.0, 1.0,
+            0.0, 0.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0
+          ]
+        }
+      };
+
+      var interleaveArray = this.createInterleaveArray({
+        position: attribute.position.data,
+        color: attribute.color.data
+      });
+
+      var vao = gl.createVertexArray();
+      var vbo = this.createVBO(interleaveArray);
+      var ibo = this.createIBO2(index, vao);
+
+      var byteLength = this.getByteLength(attribute);
+
+      var square = {
+
+        index: index,
+
+        attribute: attribute,
+
+        vao: vao,
+
+        vbo: vbo,
+
+        ibo: ibo,
+
+        byteLength: byteLength,
+
+      };
+
+      this.setAttribute2(attribute, vao, vbo, byteLength);
+
+      // // attribute有効化
+      // gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+      // gl.enableVertexAttribArray(attribute.position.location);
+      // gl.vertexAttribPointer(attribute.position.location, attribute.position.stride, gl.FLOAT, false, byteLength, 0);
+      // gl.enableVertexAttribArray(attribute.color.location);
+      // gl.vertexAttribPointer(attribute.color.location, attribute.color.stride, gl.FLOAT, false, byteLength, 12);
+
+      // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+
+      return square;
+    },
+
+
+
 
     /*
       @param Number row 円の頂点数
@@ -366,15 +317,15 @@
           return;
       }
 
-
-
       gl.shaderSource(shader, scriptElement.text);
       gl.compileShader(shader)
 
       if(gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
         return shader;
+
       } else {
         console.error(gl.getShaderInfoLog(shader));
+
       }
     },
 
@@ -408,6 +359,19 @@
 
 
 
+    createIBO2: function(index, vao) {
+      var ibo = gl.createBuffer();
+
+      gl.bindVertexArray(vao);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
+      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Int16Array(index), gl.STATIC_DRAW);
+      gl.bindVertexArray(null);
+      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+      return ibo;
+    },
+
+
+
     createIBO: function(data) {
       var ibo = gl.createBuffer();
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
@@ -418,15 +382,66 @@
 
 
 
-    setAttribute: function(vbo, attrLocation, attrStride) {
+    setAttribute2: function(attribute, vao, vbo, byteLength) {
+      // float32bit == 4byte
+      var BYTE = 4;
+      var offset = 0;
+
+      gl.bindVertexArray(vao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+      _.each(attribute, function(attr, key) {
+        // 有効化
+        gl.enableVertexAttribArray(attr.location);
+        // locationにbind中のvboを紐付ける
+        gl.vertexAttribPointer(attr.location, attr.stride, gl.FLOAT, false, byteLength, offset * BYTE);
+
+        offset += attr.stride;
+      });
+
+      gl.bindVertexArray(null);
+      gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+    },
+
+
+    setAttribute: function(vbo, attrLocation, attrStrid) {
       vbo.forEach(function(el, i) {
-        // bufferのbind
         gl.bindBuffer(gl.ARRAY_BUFFER, vbo[i]);
         // attrLocationの有効化
+        // 一度呼ぶだけで良い
         gl.enableVertexAttribArray(attrLocation[i]);
-        // attrLocationの登録
-        gl.vertexAttribPointer(attrLocation[i], attrStride[i], gl.FLOAT, false, 0, 0);
+        // attrLoacationの登録
+        gl.vertexAttribPointer(attrLocation[i], attrStrid[i], gl.FLOAT, false, 0, 0);
       });
+    },
+
+
+    createInterleaveArray: function(data) {
+      var interleaveArray = [];
+      var _data = _.cloneDeep(data);
+      // 頂点単位で情報を纏めるためx,y,zの3で割る
+      var vertexNum = data.position.length / 3;
+      for(var i = 0; i < vertexNum; i++){
+        Object.keys(data).forEach(function(key) {
+          // 1回のforEachで1頂点座標に格納する頂点情報単位の数(e.g. colorなら4個単位)
+          var stride = data[key].length / vertexNum;
+          for(var j = 0; j < stride; j++) {
+            interleaveArray.push(_data[key].shift());
+          }
+        });
+      }
+      return interleaveArray;
+    },
+
+
+    getByteLength: function(attribute) {
+      var byteLength = 0;
+
+      _.each(attribute, function(value, key) {
+        byteLength += value.stride;
+      });
+      // gl.FLOAT == 32bit == 4byteなので1データ4byteとして扱う
+      return byteLength * 4;
     },
 
 
