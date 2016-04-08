@@ -1,8 +1,8 @@
 (function(){
   _.cloneDeep([]);
   var c = document.getElementById('canvas');
-  c.width = 500;
-  c.height = 300;
+  c.width = 256;
+  c.height = 256;
   var gl = c.getContext('webgl2');
 
   this.sketch = {
@@ -15,8 +15,10 @@
 
       // 深度テスト有効化
       gl.enable(gl.DEPTH_TEST);
+
       // 深度テスト評価手法設定
       gl.depthFunc(gl.LEQUAL);
+
       // // カリング有効化
       // gl.enable(gl.CULL_FACE);
 
@@ -24,28 +26,31 @@
       var fs = this.createShader('fs');
       this.prg = this.createProgram(vs, fs);
 
+      this.uniLocation = {
+        mvpMatrix: gl.getUniformLocation(this.prg, 'mvpMatrix'),
+        texture: gl.getUniformLocation(this.prg, 'texture'),
+        isUseTexture: gl.getUniformLocation(this.prg, 'isUseTexture'),
+        vertexAlpha: gl.getUniformLocation(this.prg, 'vertexAlpha')
+      };
+
       this.attrLocation = {
         position: gl.getAttribLocation(this.prg, 'position'),
-        color: gl.getAttribLocation(this.prg, 'color')
+        color: gl.getAttribLocation(this.prg, 'color'),
+        textureCoord: gl.getAttribLocation(this.prg, 'textureCoord')
       };
+
 
       this.square = this.createSquare();
 
-      var hoge = gl.getAttribLocation(this.prg, 'position');
-      var fuga = gl.getAttribLocation(this.prg, 'color');
-      var torusData = self.torus(64, 64, 0.5, 1.5);
-      var position = torusData[0];
-      var normal = torusData[1];
-      var color = torusData[2];
-      self.index = torusData[3];
-      this.aaa = [hoge, fuga];
-      self.vbo = [];
-      self.vbo[0] = self.createVBO(position);
-      self.vbo[1] = self.createVBO(color);
-      self.attrStride = [3, 4];
-      self.setAttribute(self.vbo, this.aaa, self.attrStride);
-      self.ibo = self.createIBO(self.index);
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.ibo);
+
+      this.board = this.createBoard();
+
+
+      this.postEfefct = this.createPostEfefct();
+
+
+      this.fBuffer = this.createFrameBuffer(256, 256);
+
 
       var vMatrix = mat4.create();
       var pMatrix = mat4.create();
@@ -61,12 +66,89 @@
     },
 
 
+
+    createPostEfefct: function() {
+      var vs = this.createShader('vs2');
+      var fs = this.createShader('fs2');
+      var prg = this.createProgram(vs, fs);
+
+      this.attrLocation2 = {
+        position: gl.getAttribLocation(this.prg, 'position'),
+        color: gl.getAttribLocation(this.prg, 'color'),
+      };
+
+      this.uniLocation2 = {
+        mvpMatrix: gl.getUniformLocation(prg, 'mvpMatrix'),
+        texture: gl.getUniformLocation(prg, 'texture'),
+        useBlur: gl.getUniformLocation(prg, 'useBlur')
+      };
+
+      var index = [
+        0, 1, 2,
+        3, 2, 1
+      ];
+
+      var attribute = {
+        position: {
+          location: this.attrLocation2.position,
+          stride: 3,
+          data: [
+            -1.0,  1.0,  0.0,
+             1.0,  1.0,  0.0,
+            -1.0, -1.0,  0.0,
+             1.0, -1.0,  0.0
+          ]
+        },
+        color: {
+          location: this.attrLocation2.color,
+          stride: 4,
+          data: [
+            1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0,
+            1.0, 1.0, 1.0, 1.0
+          ]
+        }
+      };
+
+      var interleaveArray = this.createInterleaveArray({
+        position: attribute.position.data,
+        color: attribute.color.data
+      });
+
+      var vao = gl.createVertexArray();
+      var vbo = this.createVBO(interleaveArray);
+      var ibo = this.createIBO2(index, vao);
+
+      var byteLength = this.getByteLength(attribute);
+
+      var postEffect = {
+
+        index: index,
+
+        attribute: attribute,
+
+        vao: vao,
+
+        vbo: vbo,
+
+        ibo: ibo,
+
+        byteLength: byteLength,
+
+      };
+
+      this.setAttribute2(attribute, vao, vbo, byteLength);
+
+      return postEffect;
+
+    },
+
+
     main: function() {
       var self = this;
       var count = 0
-      var uniLocation = {
-        mvpMatrix: gl.getUniformLocation(this.prg, 'mvpMatrix'),
-      };
+
       var mvpMatrix = mat4.create();
       var tmpMatrix = this.tmpMatrix;
       var invMatrix = mat4.create();
@@ -75,6 +157,8 @@
 
       function loop() {
         var mMatrix = mat4.create();
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, self.fBuffer.f);
 
         gl.clearColor(0, 0, 0, 1.0);
         gl.clearDepth(1.0);
@@ -86,24 +170,57 @@
         var y = Math.sin(rad) * 1.5;
         var z = Math.sin(rad) * 1.5;
 
+        gl.useProgram(self.prg);
+
+
+        // texture
+        gl.disable(gl.BLEND)
+        mat4.identity(mMatrix);
         mat4.rotate(mMatrix, mMatrix, rad, [0, 1, 0]);
         mat4.mul(mvpMatrix, tmpMatrix, mMatrix);
-        gl.uniformMatrix4fv(uniLocation.mvpMatrix, false, mvpMatrix);
+
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.uniform1i(self.uniLocation.texture, 0);
+        gl.uniform1i(self.uniLocation.isUseTexture, true);
+        gl.uniformMatrix4fv(self.uniLocation.mvpMatrix, false, mvpMatrix);
+        gl.uniform1f(self.uniLocation.vertexAlpha, 1.0);
+        gl.bindVertexArray(self.board.vao);
+        gl.drawElements(gl.TRIANGLES, self.board.index.length, gl.UNSIGNED_SHORT, 0);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+
+
+
+        // square
+        gl.enable(gl.BLEND);
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
+        mat4.identity(mMatrix);
+        mat4.translate(mMatrix, mMatrix, [0, 0, 2.3]);
+        // mat4.rotate(mMatrix, mMatrix, rad, [0, 1, 0]);
+        mat4.mul(mvpMatrix, tmpMatrix, mMatrix);
+        gl.uniformMatrix4fv(self.uniLocation.mvpMatrix, false, mvpMatrix);
+        gl.uniform1i(self.uniLocation.isUseTexture, false);
+        gl.uniform1f(self.uniLocation.vertexAlpha, 0.9);
         gl.bindVertexArray(self.square.vao);
         gl.drawElements(gl.TRIANGLES, self.square.index.length, gl.UNSIGNED_SHORT, 0);
         gl.bindVertexArray(null);
 
-        // torus
-        mat4.translate(mMatrix, mMatrix, [x, -y, -z]);
-        mat4.rotate(mMatrix, mMatrix, -rad, [0, 1, 1]);
+
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clearDepth(1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        gl.useProgram(self.b)
+
+
+        mat4.identity(mMatrix);
         mat4.mul(mvpMatrix, tmpMatrix, mMatrix);
-        mat4.invert(invMatrix, mMatrix);
-        gl.uniformMatrix4fv(uniLocation.mvpMatrix, false, mvpMatrix);
-        gl.uniformMatrix4fv(uniLocation.mMatrix, false, mMatrix);
-        gl.uniformMatrix4fv(uniLocation.invMatrix, false, invMatrix);
-        self.setAttribute(self.vbo, self.aaa, self.attrStride);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, self.ibo);
-        gl.drawElements(gl.TRIANGLES, self.index.length, gl.UNSIGNED_SHORT, 0);
+        gl.uniformMatrix4fv(self.uniLocation2.mvpMatrix, false, mvpMatrix);
+        gl.uniform1i(self.uniLocation2.texture, 0);
+        gl.uniform1i(self.uniLocation2.useBlur, true);
+        gl.drawElements(gl.TRIANGLES, self.postEffect.index.length, gl.UNSIGNED_SHORT, 0);
 
 
 
@@ -200,15 +317,6 @@
       };
 
       this.setAttribute2(attribute, vao, vbo, byteLength);
-
-      // // attribute有効化
-      // gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-      // gl.enableVertexAttribArray(attribute.position.location);
-      // gl.vertexAttribPointer(attribute.position.location, attribute.position.stride, gl.FLOAT, false, byteLength, 0);
-      // gl.enableVertexAttribArray(attribute.color.location);
-      // gl.vertexAttribPointer(attribute.color.location, attribute.color.stride, gl.FLOAT, false, byteLength, 12);
-
-      // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
 
       return square;
     },
@@ -434,6 +542,43 @@
     },
 
 
+    createFrameBuffer: function(width, height) {
+      var frameBuffer = gl.createFrameBuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+
+      // framebuffer用の深度バッファの生成
+      var depthRenderBuffer = gl.createRenderBuffer();
+      gl.bindRenderbuffer(gl.RENDERBUFFER, depthRenderBuffer);
+      // renderbufferを深度バッファとして設定
+      gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
+      // framebufferにrenderbufferを設定
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRenderBuffer);
+
+      // framebuffer用textureの生成
+      var fTexture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, fTexture);
+      // fTextureにカラーのメモリ領域を確保
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      // テクスチャパラメタ
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      // framebufferにtextureを設定
+      gl.framebuffetTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fTexture, 0);
+
+      // 各bindを解除
+      gl.bindTexture(gl.TEXTURE_2D, null);
+      gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+      return {
+        f: frameBuffer,
+        d: depthRenderBuffer,
+        t: fTexture
+      };
+
+    },
+
+
     getByteLength: function(attribute) {
       var byteLength = 0;
 
@@ -472,7 +617,7 @@
 
     createTexture: function(src) {
       var img = new Image();
-
+      gl.activeTexture(gl.TEXTURE0);
       img.onload = function() {
         var tex = gl.createTexture();
 
@@ -493,6 +638,78 @@
 
       img.src = src;
 
+    },
+
+    createBoard: function() {
+      var attribute = {
+        position: {
+          location: this.attrLocation.position,
+          stride: 3,
+          data: [
+             -1.0,  1.0,  0.0,
+              1.0,  1.0,  0.0,
+             -1.0, -1.0,  0.0,
+              1.0, -1.0,  0.0
+          ]
+        },
+        color: {
+          location: this.attrLocation.color,
+          stride: 4,
+          data: [
+             1.0, 1.0, 1.0, 1.0,
+             1.0, 1.0, 1.0, 1.0,
+             1.0, 1.0, 1.0, 1.0,
+             1.0, 1.0, 1.0, 1.0
+          ]
+        },
+        textureCoord: {
+          location: this.attrLocation.textureCoord,
+          stride: 2,
+          data: [
+            0.0, 0.0,
+            1.0, 0.0,
+            0.0, 1.0,
+            1.0, 1.0
+          ]
+        }
+      };
+
+      var index = [
+        0, 1, 2,
+        3, 2, 1
+      ];
+
+      var interleaveArray = this.createInterleaveArray({
+        position: attribute.position.data,
+        color: attribute.color.data,
+        textureCoord: attribute.textureCoord.data,
+      });
+
+      var vao = gl.createVertexArray();
+      var vbo = this.createVBO(interleaveArray);
+      var ibo = this.createIBO2(index, vao);
+      var byteLength = this.getByteLength(attribute);
+
+      var board = {
+
+        index: index,
+
+        attribute: attribute,
+
+        vao: vao,
+
+        vbo: vbo,
+
+        ibo: ibo,
+
+        byteLength: byteLength
+
+      };
+
+      this.setAttribute2(attribute, vao, vbo, byteLength);
+
+      return board;
+
     }
 
 
@@ -500,6 +717,9 @@
 
   };
 
-  this.sketch.init();
+  this.sketch.createTexture('texture.png');
+  setTimeout(function() {
+    this.sketch.init();
+  }, 500);
 
 })();
