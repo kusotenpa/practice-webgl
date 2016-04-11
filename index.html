@@ -6,6 +6,9 @@
 </head>
 <body>
     <canvas id="canvas"></canvas>
+    <div>
+        <input type="checkbox" id="blur"> blur
+    </div>
 
     <script id="vs" type="x-shader/x-vertex">
         attribute vec3 position;
@@ -62,7 +65,7 @@
     <script id="vs2" type="x-shader/x-vertex">
         attribute vec3 position;
         attribute vec4 color;
-        uniform vec3 mvpMatrix;
+        uniform mat4 mvpMatrix;
         varying vec4 vColor;
 
         void main() {
@@ -80,7 +83,7 @@
         varying vec4 vColor;
 
         void main() {
-            vec2 tFrag = vec2(1.0 / 256.0);
+            vec2 tFrag = vec2(1.0 / 512.0);
             vec4 destColor = texture2D(texture, gl_FragCoord.st * tFrag);
             if(useBlur) {
                 destColor *= 0.36;
@@ -110,6 +113,7 @@
                 destColor += texture2D(texture, (gl_FragCoord.st + vec2( 2.0, -2.0)) * tFrag) * 0.02;
             }
             gl_FragColor = vColor * destColor;
+            // gl_FragColor = vec4(1.0);
         }
     </script>
 

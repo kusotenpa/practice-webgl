@@ -1,8 +1,8 @@
 (function(){
   _.cloneDeep([]);
   var c = document.getElementById('canvas');
-  c.width = 256;
-  c.height = 256;
+  c.width = 512;
+  c.height = 512;
   var gl = c.getContext('webgl2');
 
   this.sketch = {
@@ -46,35 +46,164 @@
       this.board = this.createBoard();
 
 
-      this.postEfefct = this.createPostEfefct();
+      this.postEffect = this.createPostEffect();
 
 
-      this.fBuffer = this.createFrameBuffer(256, 256);
+      this.fBuffer = this.createFrameBuffer(512, 512);
 
 
-      var vMatrix = mat4.create();
-      var pMatrix = mat4.create();
+      this.vMatrix = mat4.create();
+      this.pMatrix = mat4.create();
       this.tmpMatrix = mat4.create();
-      // projection座標変換
-      mat4.perspective(pMatrix, 45, c.width / c.height, 0.1, 100);
-      // view座標変換
-      mat4.lookAt(vMatrix, [0.0, 0.0, 5.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
-      // pv座標
-      mat4.mul(this.tmpMatrix, pMatrix, vMatrix);
+
 
       this.main();
     },
 
 
+    main: function() {
+      var self = this;
+      var count = 0
 
-    createPostEfefct: function() {
+      var mvpMatrix = mat4.create();
+      var invMatrix = mat4.create();
+
+
+
+      function loop() {
+        count++;
+
+        var rad = (count % 360) * Math.PI / 180;
+        var x = Math.cos(rad) * 1.5;
+        var y = Math.sin(rad) * 1.5;
+        var z = Math.sin(rad) * 1.5;
+        var mMatrix = mat4.create();
+
+
+        gl.bindFramebuffer(gl.FRAMEBUFFER, self.fBuffer.f);
+
+        gl.clearColor(0, 0, 0, 1.0);
+        gl.clearDepth(1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+
+
+        gl.useProgram(self.prg);
+
+
+        // projection座標変換
+        mat4.perspective(self.pMatrix, 45, c.width / c.height, 0.1, 100);
+        // view座標変換
+        mat4.lookAt(self.vMatrix, [0.0, 0.0, 5.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        // pv座標
+        mat4.mul(self.tmpMatrix, self.pMatrix, self.vMatrix);
+
+
+        // texture
+        gl.disable(gl.BLEND)
+        mat4.identity(mMatrix);
+        mat4.rotate(mMatrix, mMatrix, rad, [0, 1, 0]);
+        mat4.mul(mvpMatrix, self.tmpMatrix, mMatrix);
+
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.uniform1i(self.uniLocation.texture, 0);
+        gl.uniform1i(self.uniLocation.isUseTexture, true);
+        gl.uniformMatrix4fv(self.uniLocation.mvpMatrix, false, mvpMatrix);
+        gl.uniform1f(self.uniLocation.vertexAlpha, 1.0);
+        gl.bindVertexArray(self.board.vao);
+        gl.drawElements(gl.TRIANGLES, self.board.index.length, gl.UNSIGNED_SHORT, 0);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+
+
+
+        // square
+        gl.enable(gl.BLEND);
+        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
+        mat4.identity(mMatrix);
+        mat4.translate(mMatrix, mMatrix, [0, 0, 2.3]);
+        mat4.mul(mvpMatrix, self.tmpMatrix, mMatrix);
+        gl.uniformMatrix4fv(self.uniLocation.mvpMatrix, false, mvpMatrix);
+        gl.uniform1i(self.uniLocation.isUseTexture, false);
+        gl.uniform1f(self.uniLocation.vertexAlpha, 0.9);
+        gl.bindVertexArray(self.square.vao);
+        gl.drawElements(gl.TRIANGLES, self.square.index.length, gl.UNSIGNED_SHORT, 0);
+        gl.bindVertexArray(null);
+
+
+
+        // post effect
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clearDepth(1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        gl.useProgram(self.postEffect.prg);
+
+        gl.bindTexture(gl.TEXTURE_2D, self.fBuffer.t);
+        mat4.lookAt(self.vMatrix, [0,0, 0.0, 0.5], [0.0, 0.0, 0.0], [0, 1.0, 0.0]);
+        mat4.ortho(self.pMatrix, -1.0, 1.0, -1.0, 1.0, 0.1, 1);
+        // mat4.mul(self.tmpMatrix, self.pMatrix, self.vMatrix);
+
+        var useBlur = document.getElementById('blur').checked;
+        mat4.identity(mMatrix);
+        mat4.mul(mvpMatrix, self.tmpMatrix, mMatrix);
+        gl.uniformMatrix4fv(self.uniLocation2.mvpMatrix, false, mvpMatrix);
+        gl.uniform1i(self.uniLocation2.texture, 0);
+        gl.uniform1i(self.uniLocation2.useBlur, useBlur);
+        gl.bindVertexArray(self.postEffect.vao);
+        gl.drawElements(gl.TRIANGLES, self.postEffect.index.length, gl.UNSIGNED_SHORT, 0);
+        gl.bindVertexArray(null);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+
+
+
+
+        /**
+         * sphere
+         */
+        // var sphereData = self.sphere(64, 64, 2.0, [0.25, 0.25, 0.75, 1.0]);
+        // var sVBO = [
+        //   self.createVBO(sphereData.p),
+        //   self.createVBO(sphereData.n),
+        //   self.createVBO(sphereData.c)
+        // ];
+        // self.setAttribute(sVBO, self.attrLocation, self.attrStride);
+        // var sd = self.created(sphereData.i);
+        // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sd);
+        // self.sphereIndex = sphereData.i;
+
+
+
+
+        // // sphere
+        // mat4.identity(mMat);
+        // mat4.translate(mMat, mMat, [-x, y, z]);
+        // mat4.mul(mvpMat, tmpMat, mMat);
+        // mat4.invert(invMat, mMat);
+        // gl.uniformMatrix4fv(uniLocation.mvpMatrix, false, mvpMat);
+        // gl.uniformMatrix4fv(uniLocation.mMatrix, false, mMat);
+        // gl.uniformMatrix4fv(uniLocation.invMatrix, false, invMat);
+        // gl.drawElements(gl.TRIANGLES, self.sphereIndex.length, gl.UNSIGNED_SHORT, 0);
+
+        gl.flush();
+        requestAnimationFrame(loop);
+      }
+
+      loop();
+    },
+
+
+
+
+    createPostEffect: function() {
       var vs = this.createShader('vs2');
       var fs = this.createShader('fs2');
       var prg = this.createProgram(vs, fs);
 
       this.attrLocation2 = {
-        position: gl.getAttribLocation(this.prg, 'position'),
-        color: gl.getAttribLocation(this.prg, 'color'),
+        position: gl.getAttribLocation(prg, 'position'),
+        color: gl.getAttribLocation(prg, 'color'),
       };
 
       this.uniLocation2 = {
@@ -136,126 +265,14 @@
 
         byteLength: byteLength,
 
+        prg: prg
+
       };
 
       this.setAttribute2(attribute, vao, vbo, byteLength);
 
       return postEffect;
 
-    },
-
-
-    main: function() {
-      var self = this;
-      var count = 0
-
-      var mvpMatrix = mat4.create();
-      var tmpMatrix = this.tmpMatrix;
-      var invMatrix = mat4.create();
-
-
-
-      function loop() {
-        var mMatrix = mat4.create();
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, self.fBuffer.f);
-
-        gl.clearColor(0, 0, 0, 1.0);
-        gl.clearDepth(1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        count++;
-        var rad = (count % 360) * Math.PI / 180;
-        var x = Math.cos(rad) * 1.5;
-        var y = Math.sin(rad) * 1.5;
-        var z = Math.sin(rad) * 1.5;
-
-        gl.useProgram(self.prg);
-
-
-        // texture
-        gl.disable(gl.BLEND)
-        mat4.identity(mMatrix);
-        mat4.rotate(mMatrix, mMatrix, rad, [0, 1, 0]);
-        mat4.mul(mvpMatrix, tmpMatrix, mMatrix);
-
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.uniform1i(self.uniLocation.texture, 0);
-        gl.uniform1i(self.uniLocation.isUseTexture, true);
-        gl.uniformMatrix4fv(self.uniLocation.mvpMatrix, false, mvpMatrix);
-        gl.uniform1f(self.uniLocation.vertexAlpha, 1.0);
-        gl.bindVertexArray(self.board.vao);
-        gl.drawElements(gl.TRIANGLES, self.board.index.length, gl.UNSIGNED_SHORT, 0);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-
-
-
-        // square
-        gl.enable(gl.BLEND);
-        gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
-        mat4.identity(mMatrix);
-        mat4.translate(mMatrix, mMatrix, [0, 0, 2.3]);
-        // mat4.rotate(mMatrix, mMatrix, rad, [0, 1, 0]);
-        mat4.mul(mvpMatrix, tmpMatrix, mMatrix);
-        gl.uniformMatrix4fv(self.uniLocation.mvpMatrix, false, mvpMatrix);
-        gl.uniform1i(self.uniLocation.isUseTexture, false);
-        gl.uniform1f(self.uniLocation.vertexAlpha, 0.9);
-        gl.bindVertexArray(self.square.vao);
-        gl.drawElements(gl.TRIANGLES, self.square.index.length, gl.UNSIGNED_SHORT, 0);
-        gl.bindVertexArray(null);
-
-
-
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-        gl.clearDepth(1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        gl.useProgram(self.b)
-
-
-        mat4.identity(mMatrix);
-        mat4.mul(mvpMatrix, tmpMatrix, mMatrix);
-        gl.uniformMatrix4fv(self.uniLocation2.mvpMatrix, false, mvpMatrix);
-        gl.uniform1i(self.uniLocation2.texture, 0);
-        gl.uniform1i(self.uniLocation2.useBlur, true);
-        gl.drawElements(gl.TRIANGLES, self.postEffect.index.length, gl.UNSIGNED_SHORT, 0);
-
-
-
-        /**
-         * sphere
-         */
-        // var sphereData = self.sphere(64, 64, 2.0, [0.25, 0.25, 0.75, 1.0]);
-        // var sVBO = [
-        //   self.createVBO(sphereData.p),
-        //   self.createVBO(sphereData.n),
-        //   self.createVBO(sphereData.c)
-        // ];
-        // self.setAttribute(sVBO, self.attrLocation, self.attrStride);
-        // var sd = self.created(sphereData.i);
-        // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sd);
-        // self.sphereIndex = sphereData.i;
-
-
-
-
-        // // sphere
-        // mat4.identity(mMat);
-        // mat4.translate(mMat, mMat, [-x, y, z]);
-        // mat4.mul(mvpMat, tmpMat, mMat);
-        // mat4.invert(invMat, mMat);
-        // gl.uniformMatrix4fv(uniLocation.mvpMatrix, false, mvpMat);
-        // gl.uniformMatrix4fv(uniLocation.mMatrix, false, mMat);
-        // gl.uniformMatrix4fv(uniLocation.invMatrix, false, invMat);
-        // gl.drawElements(gl.TRIANGLES, self.sphereIndex.length, gl.UNSIGNED_SHORT, 0);
-
-        gl.flush();
-        requestAnimationFrame(loop);
-      }
-
-      loop();
     },
 
 
@@ -543,11 +560,11 @@
 
 
     createFrameBuffer: function(width, height) {
-      var frameBuffer = gl.createFrameBuffer();
+      var frameBuffer = gl.createFramebuffer();
       gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
 
       // framebuffer用の深度バッファの生成
-      var depthRenderBuffer = gl.createRenderBuffer();
+      var depthRenderBuffer = gl.createRenderbuffer();
       gl.bindRenderbuffer(gl.RENDERBUFFER, depthRenderBuffer);
       // renderbufferを深度バッファとして設定
       gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
@@ -562,8 +579,10 @@
       // テクスチャパラメタ
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       // framebufferにtextureを設定
-      gl.framebuffetTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fTexture, 0);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fTexture, 0);
 
       // 各bindを解除
       gl.bindTexture(gl.TEXTURE_2D, null);
