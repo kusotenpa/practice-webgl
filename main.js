@@ -141,9 +141,11 @@
         gl.useProgram(self.postEffect.prg);
 
         gl.bindTexture(gl.TEXTURE_2D, self.fBuffer.t);
-        mat4.lookAt(self.vMatrix, [0,0, 0.0, 0.5], [0.0, 0.0, 0.0], [0, 1.0, 0.0]);
-        mat4.ortho(self.pMatrix, -1.0, 1.0, -1.0, 1.0, 0.1, 1);
-        // mat4.mul(self.tmpMatrix, self.pMatrix, self.vMatrix);
+
+        mat4.lookAt(self.vMatrix, [0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        mat4.ortho(self.pMatrix, -1.0, 1.0, -1.0, 1.0, 0.1, 1.0);
+        mat4.mul(self.tmpMatrix, self.pMatrix, self.vMatrix);
+
 
         var useBlur = document.getElementById('blur').checked;
         mat4.identity(mMatrix);
