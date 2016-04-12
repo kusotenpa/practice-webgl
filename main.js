@@ -42,14 +42,36 @@
 
       this.square = this.createSquare();
 
+      this.triangle = this.createTriangle();
+
 
       this.board = this.createBoard();
 
 
-      this.postEffect = this.createPostEffect();
+      this.blur = this.createPostEffect(
+        {
+          vs: 'vs2',
+          fs: 'fs2'
+        },
+        {
+          uniLocation: ['useBlur']
+        }
+      );
+      this.blurBuffer = this.createFrameBuffer(c.width, c.height);
 
 
-      this.fBuffer = this.createFrameBuffer(512, 512);
+      this.grayScale = this.createPostEffect(
+        {
+          vs: 'vs3',
+          fs: 'fs3'
+        },
+        {
+          uniLocation: ['isGrayScale']
+        }
+      );
+      this.grayScaleBuffer = this.createFrameBuffer(c.width, c.height);
+
+
 
 
       this.vMatrix = mat4.create();
@@ -80,16 +102,10 @@
         var mMatrix = mat4.create();
 
 
-        gl.bindFramebuffer(gl.FRAMEBUFFER, self.fBuffer.f);
-
-        gl.clearColor(0, 0, 0, 1.0);
-        gl.clearDepth(1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-
-
+        // gl.bindFramebuffer(gl.FRAMEBUFFER, self.grayScaleBuffer.f);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, self.blurBuffer.f);
         gl.useProgram(self.prg);
-
+        self.clear();
 
         // projection座標変換
         mat4.perspective(self.pMatrix, 45, c.width / c.height, 0.1, 100);
@@ -97,7 +113,6 @@
         mat4.lookAt(self.vMatrix, [0.0, 0.0, 5.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
         // pv座標
         mat4.mul(self.tmpMatrix, self.pMatrix, self.vMatrix);
-
 
         // texture
         gl.disable(gl.BLEND)
@@ -122,6 +137,7 @@
         mat4.identity(mMatrix);
         mat4.translate(mMatrix, mMatrix, [0, 0, 2.3]);
         mat4.mul(mvpMatrix, self.tmpMatrix, mMatrix);
+
         gl.uniformMatrix4fv(self.uniLocation.mvpMatrix, false, mvpMatrix);
         gl.uniform1i(self.uniLocation.isUseTexture, false);
         gl.uniform1f(self.uniLocation.vertexAlpha, 0.9);
@@ -131,62 +147,63 @@
 
 
 
-        // post effect
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        // triangle
+        gl.disable(gl.BLEND)
+        mat4.identity(mMatrix);
+        mat4.translate(mMatrix, mMatrix, [1.0, 0, 2.3]);
+        mat4.mul(mvpMatrix, self.tmpMatrix, mMatrix);
 
-        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-        gl.clearDepth(1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.uniformMatrix4fv(self.uniLocation.mvpMatrix, false, mvpMatrix);
+        gl.bindVertexArray(self.triangle.vao);
+        gl.drawElements(gl.TRIANGLES, self.triangle.index.length, gl.UNSIGNED_SHORT, 0);
+        gl.bindVertexArray(null);
 
-        gl.useProgram(self.postEffect.prg);
 
-        gl.bindTexture(gl.TEXTURE_2D, self.fBuffer.t);
 
+
+        // blur
+        gl.bindFramebuffer(gl.FRAMEBUFFER, self.grayScaleBuffer.f);
+        gl.useProgram(self.blur.prg);
+        self.clear();
+
+        gl.bindTexture(gl.TEXTURE_2D, self.blurBuffer.t);
         mat4.lookAt(self.vMatrix, [0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
         mat4.ortho(self.pMatrix, -1.0, 1.0, -1.0, 1.0, 0.1, 1.0);
         mat4.mul(self.tmpMatrix, self.pMatrix, self.vMatrix);
 
-
         var useBlur = document.getElementById('blur').checked;
         mat4.identity(mMatrix);
         mat4.mul(mvpMatrix, self.tmpMatrix, mMatrix);
-        gl.uniformMatrix4fv(self.uniLocation2.mvpMatrix, false, mvpMatrix);
-        gl.uniform1i(self.uniLocation2.texture, 0);
-        gl.uniform1i(self.uniLocation2.useBlur, useBlur);
-        gl.bindVertexArray(self.postEffect.vao);
-        gl.drawElements(gl.TRIANGLES, self.postEffect.index.length, gl.UNSIGNED_SHORT, 0);
+        gl.uniformMatrix4fv(self.blur.uniLocation.mvpMatrix, false, mvpMatrix);
+        gl.uniform1i(self.blur.uniLocation.texture, 0);
+        gl.uniform1i(self.blur.uniLocation.useBlur, useBlur);
+        gl.bindVertexArray(self.blur.vao);
+        gl.drawElements(gl.TRIANGLES, self.blur.index.length, gl.UNSIGNED_SHORT, 0);
         gl.bindVertexArray(null);
         gl.bindTexture(gl.TEXTURE_2D, null);
 
 
+        // grayscale
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.useProgram(self.grayScale.prg);
+        self.clear();
 
+        gl.bindTexture(gl.TEXTURE_2D, self.grayScaleBuffer.t);
+        mat4.lookAt(self.vMatrix, [0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        mat4.ortho(self.pMatrix, -1.0, 1.0, -1.0, 1.0, 0.1, 1.0);
+        mat4.mul(self.tmpMatrix, self.pMatrix, self.vMatrix);
 
-        /**
-         * sphere
-         */
-        // var sphereData = self.sphere(64, 64, 2.0, [0.25, 0.25, 0.75, 1.0]);
-        // var sVBO = [
-        //   self.createVBO(sphereData.p),
-        //   self.createVBO(sphereData.n),
-        //   self.createVBO(sphereData.c)
-        // ];
-        // self.setAttribute(sVBO, self.attrLocation, self.attrStride);
-        // var sd = self.created(sphereData.i);
-        // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, sd);
-        // self.sphereIndex = sphereData.i;
+        var isGrayScale = document.getElementById('grayScale').checked;
+        mat4.identity(mMatrix);
+        mat4.mul(mvpMatrix, self.tmpMatrix, mMatrix);
+        gl.uniformMatrix4fv(self.grayScale.uniLocation.mvpMatrix, false, mvpMatrix);
+        gl.uniform1i(self.grayScale.uniLocation.texture, 0);
+        gl.uniform1i(self.grayScale.uniLocation.isGrayScale, isGrayScale);
+        gl.bindVertexArray(self.grayScale.vao);
+        gl.drawElements(gl.TRIANGLES, self.grayScale.index.length, gl.UNSIGNED_SHORT, 0);
+        gl.bindVertexArray(null);
+        gl.bindTexture(gl.TEXTURE_2D, null);
 
-
-
-
-        // // sphere
-        // mat4.identity(mMat);
-        // mat4.translate(mMat, mMat, [-x, y, z]);
-        // mat4.mul(mvpMat, tmpMat, mMat);
-        // mat4.invert(invMat, mMat);
-        // gl.uniformMatrix4fv(uniLocation.mvpMatrix, false, mvpMat);
-        // gl.uniformMatrix4fv(uniLocation.mMatrix, false, mMat);
-        // gl.uniformMatrix4fv(uniLocation.invMatrix, false, invMat);
-        // gl.drawElements(gl.TRIANGLES, self.sphereIndex.length, gl.UNSIGNED_SHORT, 0);
 
         gl.flush();
         requestAnimationFrame(loop);
@@ -198,21 +215,29 @@
 
 
 
-    createPostEffect: function() {
-      var vs = this.createShader('vs2');
-      var fs = this.createShader('fs2');
+    createPostEffect: function(shader, option) {
+      var vs = this.createShader(shader.vs);
+      var fs = this.createShader(shader.fs);
       var prg = this.createProgram(vs, fs);
 
-      this.attrLocation2 = {
+      var attrLocation = {
         position: gl.getAttribLocation(prg, 'position'),
         color: gl.getAttribLocation(prg, 'color'),
+        textureCoord: gl.getAttribLocation(prg, 'textureCoord')
       };
 
-      this.uniLocation2 = {
+      var uniLocation = {
         mvpMatrix: gl.getUniformLocation(prg, 'mvpMatrix'),
-        texture: gl.getUniformLocation(prg, 'texture'),
-        useBlur: gl.getUniformLocation(prg, 'useBlur')
+        texture: gl.getUniformLocation(prg, 'texture')
       };
+
+      if(Array.isArray(option.uniLocation) && option.uniLocation.length) {
+        var _uniLocation = {};
+        option.uniLocation.forEach(function(el, i) {
+          _uniLocation[el] = gl.getUniformLocation(prg, el);
+        });
+        _.merge(uniLocation, _uniLocation);
+      }
 
       var index = [
         0, 1, 2,
@@ -221,7 +246,7 @@
 
       var attribute = {
         position: {
-          location: this.attrLocation2.position,
+          location: attrLocation.position,
           stride: 3,
           data: [
             -1.0,  1.0,  0.0,
@@ -231,7 +256,7 @@
           ]
         },
         color: {
-          location: this.attrLocation2.color,
+          location: attrLocation.color,
           stride: 4,
           data: [
             1.0, 1.0, 1.0, 1.0,
@@ -239,12 +264,23 @@
             1.0, 1.0, 1.0, 1.0,
             1.0, 1.0, 1.0, 1.0
           ]
+        },
+        textureCoord: {
+          location: attrLocation.textureCoord,
+          stride: 2,
+          data: [
+            0.0, 0.0,
+            1.0, 0.0,
+            0.0, 1.0,
+            1.0, 1.0
+          ]
         }
       };
 
       var interleaveArray = this.createInterleaveArray({
         position: attribute.position.data,
-        color: attribute.color.data
+        color: attribute.color.data,
+        textureCoord: attribute.textureCoord.data
       });
 
       var vao = gl.createVertexArray();
@@ -267,7 +303,9 @@
 
         byteLength: byteLength,
 
-        prg: prg
+        prg: prg,
+
+        uniLocation: uniLocation
 
       };
 
@@ -451,6 +489,7 @@
         return shader;
 
       } else {
+        console.error(id);
         console.error(gl.getShaderInfoLog(shader));
 
       }
@@ -521,10 +560,8 @@
         gl.enableVertexAttribArray(attr.location);
         // locationにbind中のvboを紐付ける
         gl.vertexAttribPointer(attr.location, attr.stride, gl.FLOAT, false, byteLength, offset * BYTE);
-
         offset += attr.stride;
       });
-
       gl.bindVertexArray(null);
       gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
@@ -731,6 +768,73 @@
 
       return board;
 
+    },
+
+
+    createTriangle: function() {
+      var attribute = {
+        position: {
+          location: this.attrLocation.position,
+          stride: 3,
+          data: [
+             0.0, 1.0, 0.0,
+             1.0, 0.0, 0.0,
+            -1.0, 0.0, 0.0
+          ]
+        },
+        color: {
+          location: this.attrLocation.color,
+          stride: 4,
+          data: [
+             1.0, 1.0, 1.0, 1.0,
+             1.0, 1.0, 1.0, 1.0,
+             1.0, 1.0, 1.0, 1.0,
+          ]
+        }
+      };
+
+      var index = [
+        0, 1, 2,
+      ];
+
+      var interleaveArray = this.createInterleaveArray({
+        position: attribute.position.data,
+        color: attribute.color.data,
+      });
+
+      var vao = gl.createVertexArray();
+      var vbo = this.createVBO(interleaveArray);
+      var ibo = this.createIBO2(index, vao);
+      var byteLength = this.getByteLength(attribute);
+
+      var board = {
+
+        index: index,
+
+        attribute: attribute,
+
+        vao: vao,
+
+        vbo: vbo,
+
+        ibo: ibo,
+
+        byteLength: byteLength
+
+      };
+
+      this.setAttribute2(attribute, vao, vbo, byteLength);
+
+      return board;
+
+    },
+
+
+
+    clear: function() {
+      gl.clearColor(0, 0, 0, 1.0);
+      gl.clearDepth(1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     }
 
 
@@ -738,7 +842,7 @@
 
   };
 
-  this.sketch.createTexture('texture.png');
+  this.sketch.createTexture('texture2.png');
   setTimeout(function() {
     this.sketch.init();
   }, 500);

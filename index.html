@@ -9,6 +9,9 @@
     <div>
         <input type="checkbox" id="blur"> blur
     </div>
+    <div>
+        <input type="checkbox" id="grayScale"> grayscale
+    </div>
 
     <script id="vs" type="x-shader/x-vertex">
         attribute vec3 position;
@@ -65,6 +68,7 @@
     <script id="vs2" type="x-shader/x-vertex">
         attribute vec3 position;
         attribute vec4 color;
+
         uniform mat4 mvpMatrix;
         varying vec4 vColor;
 
@@ -113,8 +117,45 @@
                 destColor += texture2D(texture, (gl_FragCoord.st + vec2( 2.0, -2.0)) * tFrag) * 0.02;
             }
             gl_FragColor = vColor * destColor;
-            // gl_FragColor = vec4(1.0);
         }
+    </script>
+
+
+    <script id="vs3" type="x-shader/x-vertex">
+        attribute vec3 position;
+        attribute vec2 textureCoord;
+        uniform mat4 mvpMatrix;
+        varying vec2 vTextureCoord;
+
+        void main() {
+            vTextureCoord = vec2(textureCoord.x, 1.0 - textureCoord.y);
+            gl_Position = mvpMatrix * vec4(position, 1.0);
+        }
+    </script>
+
+
+    <script id="fs3" type="x-shader/x-fragment">
+        precision mediump float;
+
+        uniform sampler2D texture;
+        uniform bool isGrayScale;
+        varying vec2 vTextureCoord;
+
+        const float redScale = 0.298912;
+        const float greenScale = 0.586611;
+        const float blueScale = 0.114478;
+        const vec3 monochromeScale = vec3(redScale, greenScale, blueScale);
+
+        void main() {
+            vec4 smpColor = texture2D(texture, vTextureCoord);
+            if(isGrayScale) {
+                float grayColor = dot(smpColor.rgb, monochromeScale);
+                smpColor = vec4(vec3(grayColor), 1.0);
+            }
+            gl_FragColor = smpColor;
+        }
+
+
     </script>
 
     <script src="gl-matrix-min.js"></script>
