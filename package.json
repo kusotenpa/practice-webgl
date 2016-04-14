@@ -1,0 +1,25 @@
+{
+  "name": "test-react",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "watch": "watchify ./public/js/main.js -d -o ./dist/main.js -v"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-preset-es2015": "^6.5.0",
+    "babelify": "^7.2.0",
+    "browserify": "^13.0.0",
+    "watchify": "^3.7.0"
+  },
+  "browserify": {
+    "transform": [["babelify", {"presets": ["es2015"]}]]
+  },
+  "dependencies": {
+    "gl-matrix": "^2.3.2",
+    "lodash": "^4.11.1"
+  }
+}
