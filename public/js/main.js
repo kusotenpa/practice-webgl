@@ -1,12 +1,8 @@
-// import GL from './gl';
-
-(function() {
-
+(function(){
   var c = document.getElementById('canvas');
-  var gl = c.getContext('webgl2');
   c.width = 512;
   c.height = 512;
-
+  var gl = c.getContext('webgl2');
   var texture;
 
   var sketch = {
@@ -647,7 +643,7 @@
       _.each(attribute, function(value, key) {
         byteLength += value.stride;
       });
-      // gl.FLOAT == 32bit == 4byte => 1データ4byteとして扱う
+      // gl.FLOAT == 32bit == 4byteなので1データ4byteとして扱う
       return byteLength * 4;
     },
 
@@ -846,7 +842,7 @@
 
   };
 
-  sketch.createTexture('../public/img/texture2.png');
+  sketch.createTexture('/public/img/texture2.png');
   setTimeout(function() {
     sketch.init();
   }, 500);
