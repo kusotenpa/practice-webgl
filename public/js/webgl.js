@@ -1,7 +1,8 @@
 import _ from './lib/lodash';
 
 export default class Webgl {
-  constructor(canvas){
+  constructor(){
+    const canvas = document.getElementById('canvas');
     this.gl = canvas.getContext('webgl2');
   }
 
@@ -91,7 +92,7 @@ export default class Webgl {
 
     };
 
-    this.setAttribute(attribute, vao, vbo, byteLength);
+    this._setAttribute(attribute, vao, vbo, byteLength);
 
     return postEffect;
 
@@ -101,6 +102,7 @@ export default class Webgl {
 
 
   _createShader(shader) {
+    const gl = this.gl;
     const vs = gl.createShader(gl.VERTEX_SHADER);
     const fs = gl.createShader(gl.FRAGMENT_SHADER);
 
@@ -191,6 +193,7 @@ export default class Webgl {
 
 
   _setAttribute(attribute, vao, vbo, byteLength) {
+    const gl = this.gl;
     // float32bit === 4byte
     const BYTE = 4;
     let offset = 0;
@@ -211,6 +214,7 @@ export default class Webgl {
 
 
   _createVBO(data) {
+    const gl = this.gl;
     const vbo = gl.createBuffer();
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
@@ -222,6 +226,7 @@ export default class Webgl {
 
 
   _createIBO(index, vao) {
+    const gl = this.gl;
     const ibo = gl.createBuffer();
 
     gl.bindVertexArray(vao);
@@ -234,6 +239,8 @@ export default class Webgl {
 
 
   _createProgram(shader) {
+    const gl = this.gl;
+
     const program = gl.createProgram();
 
     gl.attachShader(program, shader.vs);
@@ -254,6 +261,7 @@ export default class Webgl {
 
 
   clear() {
+    const gl = this.gl;
     this.gl.clearColor(0, 0, 0, 1.0);
     this.gl.clearDepth(1.0);
     this.gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
