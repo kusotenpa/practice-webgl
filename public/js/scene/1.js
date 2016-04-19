@@ -17,6 +17,10 @@ export default class Scene1 {
 
 
   render(tmpMatrix, resolution) {
+    gl.useProgram(this.triangle.prg);
+
+    ww.clear();
+
     mat4.identity(this.mMatrix);
     // mat4.translate(this.mMatrix, this.mMatrix, [1.0, 0, 2.3]);
     mat4.mul(this.mvpMatrix, tmpMatrix, this.mMatrix);
@@ -26,6 +30,7 @@ export default class Scene1 {
     gl.bindVertexArray(this.triangle.vao);
     gl.drawElements(gl.TRIANGLES, this.triangle.index.length, gl.UNSIGNED_SHORT, 0);
     gl.bindVertexArray(null);
+    gl.bindTexture(gl.TEXTURE_2D, null);
   }
 
 
@@ -58,9 +63,9 @@ export default class Scene1 {
         location: attrLocation.color,
         stride: 4,
         data: [
-           1.0, 1.0, 1.0, 1.0,
-           1.0, 1.0, 1.0, 1.0,
-           1.0, 1.0, 1.0, 1.0,
+           0.3, 1.0, 1.0, 1.0,
+           0.0, 0.7, 1.0, 1.0,
+           0.0, 1.0, 0.2, 1.0,
         ]
       }
     };
@@ -81,19 +86,21 @@ export default class Scene1 {
 
     const triangle = {
 
-      index: index,
+      index,
 
-      attribute: attribute,
+      attribute,
 
-      uniLocation: uniLocation,
+      uniLocation,
 
-      vao: vao,
+      vao,
 
-      vbo: vbo,
+      vbo,
 
-      ibo: ibo,
+      ibo,
 
-      byteLength: byteLength
+      byteLength,
+
+      prg
 
     };
 

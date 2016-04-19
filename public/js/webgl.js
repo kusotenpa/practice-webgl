@@ -1,15 +1,18 @@
 import _ from './lib/lodash';
+import {mat4} from './lib/gl-matrix-min';
 
 export default class Webgl {
   constructor(){
     const canvas = document.getElementById('canvas');
     this.gl = canvas.getContext('webgl2');
+    this.gl.canvas.width = window.innerWidth;
+    this.gl.canvas.height = window.innerHeight;
   }
 
 
 
 
-  createPostEffect(shader, option) {
+  createPlane(shader, option) {
     const gl = this.gl;
     const s = this._createShader(shader);
     const prg = this._createProgram(s);
@@ -19,7 +22,7 @@ export default class Webgl {
       texture: gl.getUniformLocation(prg, 'texture')
     };
 
-    if(Array.isArray(option.uniLocation) && option.uniLocation.length) {
+    if(typeof option !== 'undefined' && Array.isArray(option.uniLocation) && option.uniLocation.length) {
       let _uniLocation = {};
       option.uniLocation.forEach(function(el, i) {
         _uniLocation[el] = gl.getUniformLocation(prg, el);
@@ -60,41 +63,47 @@ export default class Webgl {
       3, 2, 1
     ];
 
-    const interleaveArray = this.createInterleaveArray({
+    const interleaveArray = this._createInterleaveArray({
       position: attribute.position.data,
-      color: attribute.color.data,
       textureCoord: attribute.textureCoord.data
     });
 
     const vao = gl.createVertexArray();
-    const vbo = this.createVBO(interleaveArray);
-    const ibo = this.createIBO2(index, vao);
+    const vbo = this._createVBO(interleaveArray);
+    const ibo = this._createIBO(index, vao);
 
-    const byteLength = this.getByteLength(attribute);
+    const byteLength = this._getByteLength(attribute);
+    const _buffer = this._createFrameBuffer(gl.canvas.width, gl.canvas.height);
 
-    const postEffect = {
+    const plane = {
 
-      index: index,
+      index,
 
-      attribute: attribute,
+      attribute,
 
-      vao: vao,
+      uniLocation,
 
-      vbo: vbo,
+      vao,
 
-      ibo: ibo,
+      vbo,
 
-      byteLength: byteLength,
+      ibo,
 
-      prg: prg,
+      byteLength,
 
-      uniLocation: uniLocation
+      prg,
+
+      frameBuffer: _buffer.frameBuffer,
+
+      frameBufferTexture: _buffer.frameBufferTexture,
+
+      depthRenderBuffer: _buffer.depthRenderBuffer
 
     };
 
     this._setAttribute(attribute, vao, vbo, byteLength);
 
-    return postEffect;
+    return plane;
 
   }
 
@@ -123,7 +132,7 @@ export default class Webgl {
   }
 
 
-  createFrameBuffer(width, height) {
+  _createFrameBuffer(width, height) {
     const gl = this.gl;
     const frameBuffer = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
@@ -137,8 +146,8 @@ export default class Webgl {
     gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRenderBuffer);
 
     // framebuffer用textureの生成
-    const fTexture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, fTexture);
+    const frameBufferTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, frameBufferTexture);
     // fTextureにカラーのメモリ領域を確保
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     // テクスチャパラメタ
@@ -147,7 +156,7 @@ export default class Webgl {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     // framebufferにtextureを設定
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fTexture, 0);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, frameBufferTexture, 0);
 
     // 各bindを解除
     gl.bindTexture(gl.TEXTURE_2D, null);
@@ -155,9 +164,9 @@ export default class Webgl {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
     return {
-      f: frameBuffer,
-      d: depthRenderBuffer,
-      t: fTexture
+      frameBuffer,
+      frameBufferTexture,
+      depthRenderBuffer,
     };
 
   }
@@ -255,6 +264,17 @@ export default class Webgl {
       console.error(gl.getProgramInfoLog(program));
 
     }
+  }
+
+
+  createOrtho() {
+    let vMatrix = mat4.create();
+    let pMatrix = mat4.create();
+    let mvpMatrix = mat4.create();
+    mat4.lookAt(vMatrix, [0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+    mat4.ortho(pMatrix, -1.0, 1.0, -1.0, 1.0, 0.1, 1.0);
+    mat4.mul(mvpMatrix, pMatrix, vMatrix);
+    return mvpMatrix;
   }
 
 

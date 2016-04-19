@@ -1,8 +1,10 @@
-// import Webgl from './webgl';
-import Scene1 from './scene/1';
 import Webgl from './webgl';
+import GrayScale from './scene/post-effect/gray-scale';
+import Scene1 from './scene/1';
+
 const ww = new Webgl();
 const gl = ww.gl;
+const grayScale = new GrayScale();
 const scene1 = new Scene1();
 
 
@@ -36,20 +38,33 @@ class Sketch {
       mat4.lookAt(vMatrix, [0.0, 0.0, 5.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
       mat4.mul(tmpMatrix, pMatrix, vMatrix);
 
+
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, grayScale.frameBuffer);
+
       scene1.render(tmpMatrix, this.resolution);
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+      grayScale.render();
+
+
+      gl.flush();
       requestAnimationFrame(render);
     }
+
     requestAnimationFrame(render);
+
   }
 
   setCanvas() {
-    const canvas = document.getElementById('canvas');
     const width = window.innerWidth;
     const height = window.innerHeight;
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
     this.aspect = width / height;
     this.resolution = [width, height];
+    gl.canvas.width = width;
+    gl.canvas.height = height;
+    gl.viewport(0, 0, width, height);
   }
 
   resize() {
