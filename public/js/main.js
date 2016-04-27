@@ -40,7 +40,7 @@ class Sketch {
 
 
 
-      gl.bindFramebuffer(gl.FRAMEBUFFER, grayScale.frameBuffer);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, grayScale.grayScale.frameBuffer);
 
       scene1.render(tmpMatrix, this.resolution);
 
