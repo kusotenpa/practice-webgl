@@ -38,8 +38,6 @@ class Sketch {
       mat4.lookAt(vMatrix, [0.0, 0.0, 5.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
       mat4.mul(tmpMatrix, pMatrix, vMatrix);
 
-
-
       gl.bindFramebuffer(gl.FRAMEBUFFER, grayScale.grayScale.frameBuffer);
 
       scene1.render(tmpMatrix, this.resolution);

@@ -9,7 +9,8 @@ export default class GrayScale {
     this.grayScale = ww.createPlane({
       vs: glslify('../../../shader/gray-scale/vertex.glsl'),
       fs: glslify('../../../shader/gray-scale/fragment.glsl')
-    });
+    }
+    );
 
     this.mMatrix = mat4.create();
     this.mvpMatrix = mat4.create();
@@ -21,7 +22,6 @@ export default class GrayScale {
 
     ww.clear();
 
-    gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.grayScale.frameBufferTexture);
 
     this.mvpMatrix = ww.createOrtho();
