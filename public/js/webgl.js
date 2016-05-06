@@ -32,7 +32,7 @@ export default class Webgl {
 
     const attrLocation = {
       position: gl.getAttribLocation(prg, 'position'),
-      textureCoord: gl.getAttribLocation(prg, 'textureCoord')
+      uv: gl.getAttribLocation(prg, 'uv')
     };
 
     const attribute = {
@@ -46,8 +46,8 @@ export default class Webgl {
            1.0, -1.0,  0.0
         ]
       },
-      textureCoord: {
-        location: attrLocation.textureCoord,
+      uv: {
+        location: attrLocation.uv,
         stride: 2,
         data: [
           0.0, 0.0,
@@ -65,7 +65,7 @@ export default class Webgl {
 
     const interleaveArray = this._createInterleaveArray({
       position: attribute.position.data,
-      textureCoord: attribute.textureCoord.data
+      uv: attribute.uv.data
     });
 
     const vao = gl.createVertexArray();

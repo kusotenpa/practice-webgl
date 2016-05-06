@@ -2,6 +2,7 @@ import Webgl from './webgl';
 const glslify = require('glslify');
 import GrayScale from './scene/post-effect/gray-scale';
 import Mosaic from './scene/post-effect/mosaic';
+import Noise from './scene/post-effect/noise';
 import Scene1 from './scene/1';
 
 
@@ -15,6 +16,12 @@ const mosaic = new Mosaic(ww.createPlane({
   vs: glslify('../shader/mosaic/vertex.glsl'),
   fs: glslify('../shader/mosaic/fragment.glsl')
 }));
+const noise = new Noise(ww.createPlane(
+{
+  vs: glslify('../shader/noise/vertex.glsl'),
+  fs: glslify('../shader/noise/fragment.glsl')
+},{uniLocation: ['time']}));
+
 const scene1 = new Scene1();
 
 
@@ -48,18 +55,32 @@ class Sketch {
       mat4.lookAt(vMatrix, [0.0, 0.0, 5.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
       mat4.mul(tmpMatrix, pMatrix, vMatrix);
 
-      // gl.bindFramebuffer(gl.FRAMEBUFFER, grayScale.data.frameBuffer);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, mosaic.data.frameBuffer);
+
+
+
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, noise.data.frameBuffer);
 
       scene1.render(tmpMatrix, this.resolution);
 
       // gl.bindFramebuffer(gl.FRAMEBUFFER, mosaic.data.frameBuffer);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-      // grayScale.render();
+      noise.render();
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-      mosaic.render();
+      // mosaic.render();
+
+
+
+
+
+
+
+
+
+
 
 
       gl.flush();
