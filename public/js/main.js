@@ -1,5 +1,6 @@
 import Webgl from './webgl';
 const glslify = require('glslify');
+import Midi from './midi';
 import GrayScale from './scene/post-effect/gray-scale';
 import Mosaic from './scene/post-effect/mosaic';
 import Noise from './scene/post-effect/noise';
@@ -27,10 +28,16 @@ const scene1 = new Scene1();
 
 class Sketch {
   constructor() {
+    const midi = new Midi(this.onMidiOut.bind(this));
 
     this.setCanvas();
     this.resize();
-
+    this.effects = {
+      5: grayScale,
+      6: mosaic,
+      7: noise,
+    };
+    this.renderArray = [null];
 
     // 深度テスト有効化
     gl.enable(gl.DEPTH_TEST);
@@ -55,33 +62,24 @@ class Sketch {
       mat4.lookAt(vMatrix, [0.0, 0.0, 5.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
       mat4.mul(tmpMatrix, pMatrix, vMatrix);
 
+      this.renderArray.forEach((el, i) => {
 
+        if (this.renderArray.length - 1 === i) {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
+        } else {
+          gl.bindFramebuffer(gl.FRAMEBUFFER, el.data.frameBuffer);
 
+        }
 
-      gl.bindFramebuffer(gl.FRAMEBUFFER, noise.data.frameBuffer);
+        if (i === 0) {
+          this.renderScene(tmpMatrix);
 
-      scene1.render(tmpMatrix, this.resolution);
+        } else {
+          this.renderArray[i - 1].render();
 
-      // gl.bindFramebuffer(gl.FRAMEBUFFER, mosaic.data.frameBuffer);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-      noise.render();
-
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-      // mosaic.render();
-
-
-
-
-
-
-
-
-
-
-
+        }
+      });
 
       gl.flush();
       requestAnimationFrame(render);
@@ -89,6 +87,44 @@ class Sketch {
 
     requestAnimationFrame(render);
 
+  }
+
+  renderScene(tmpMatrix) {
+    scene1.render(tmpMatrix, this.resolution);
+  }
+
+  onMidiOut(data) {
+    if(data.isKnob1) {
+      console.log('isKnob1');
+            console.log(data);
+
+      uniforms.knob1.value = data.velocity;
+
+    } else if(data.isKnob2) {
+      console.log('isKnob2');
+            console.log(data);
+
+      uniforms.knob2.value = data.velocity;
+
+    } else {
+      console.log('pad')
+      console.log(data);
+      if (data.note > 4) {
+        this.setRenderSequence(data);
+      }
+    }
+  }
+
+  setRenderSequence(data) {
+    const target = this.effects[data.note];
+
+    if (data.velocity && this.renderArray.indexOf(target) === -1) {
+      this.renderArray.unshift(target);
+
+    } else {
+      this.renderArray = this.renderArray.filter((el) => el !== target);
+
+    }
   }
 
   setCanvas() {
