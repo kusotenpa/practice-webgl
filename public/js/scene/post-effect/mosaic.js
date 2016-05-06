@@ -1,7 +1,7 @@
 import PostEffect from '../../post-effect';
 
-export default class GrayScale extends PostEffect{
+export default class Mosaic extends PostEffect {
   constructor(data) {
     super(data);
   }
-};
+}

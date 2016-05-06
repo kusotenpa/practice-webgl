@@ -166,7 +166,7 @@ export default class Webgl {
     return {
       frameBuffer,
       frameBufferTexture,
-      depthRenderBuffer,
+      depthRenderBuffer
     };
 
   }
