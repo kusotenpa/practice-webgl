@@ -2,6 +2,7 @@ precision mediump float;
 
 uniform sampler2D texture;
 uniform float time;
+uniform float noiseValue;
 varying vec2 vUv;
 
 float rand(vec2 co){
@@ -17,9 +18,8 @@ void main()
   float r = rand(pos);
 
   vec3 noise = vec3(r);
-  float noise_intensity = 0.5;
 
-  color = mix(color, noise, noise_intensity);
+  color = mix(color, noise, noiseValue);
 
   gl_FragColor = vec4(color, 1.0).rgba;
 }

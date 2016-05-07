@@ -9,6 +9,8 @@ export default class PostEffect {
     this.data = data;
     this.mMatrix = mat4.create();
     this.mvpMatrix = mat4.create();
+    this.knob1Value = 0.5;
+    this.knob2Value = 0.5;
   }
 
   render() {

@@ -1,4 +1,5 @@
 import Webgl from './webgl';
+import {mat4} from './lib/gl-matrix-min';
 const glslify = require('glslify');
 import Midi from './midi';
 import GrayScale from './scene/post-effect/gray-scale';
@@ -16,12 +17,12 @@ const grayScale = new GrayScale(ww.createPlane({
 const mosaic = new Mosaic(ww.createPlane({
   vs: glslify('../shader/mosaic/vertex.glsl'),
   fs: glslify('../shader/mosaic/fragment.glsl')
-}));
+}, {uniLocation: ['mosaicSize']}));
 const noise = new Noise(ww.createPlane(
 {
   vs: glslify('../shader/noise/vertex.glsl'),
   fs: glslify('../shader/noise/fragment.glsl')
-},{uniLocation: ['time']}));
+}, {uniLocation: ['time', 'noiseValue']}));
 
 const scene1 = new Scene1();
 
@@ -32,7 +33,8 @@ class Sketch {
 
     this.setCanvas();
     this.resize();
-    this.effects = {
+    this.midiBinding = {
+      1: scene1,
       5: grayScale,
       6: mosaic,
       7: noise,
@@ -56,7 +58,8 @@ class Sketch {
     let pMatrix = mat4.create();
     let tmpMatrix = mat4.create();
 
-    const render = () => {
+    const render = (time) => {
+
       ww.clear();
       mat4.perspective(pMatrix, 45, this.aspect, 0.1, 1000);
       mat4.lookAt(vMatrix, [0.0, 0.0, 5.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
@@ -73,7 +76,7 @@ class Sketch {
         }
 
         if (i === 0) {
-          this.renderScene(tmpMatrix);
+          this.renderScene(tmpMatrix, time);
 
         } else {
           this.renderArray[i - 1].render();
@@ -89,16 +92,13 @@ class Sketch {
 
   }
 
-  renderScene(tmpMatrix) {
-    scene1.render(tmpMatrix, this.resolution);
+  renderScene(tmpMatrix, time) {
+    scene1.render(tmpMatrix, this.resolution, time);
   }
 
   onMidiOut(data) {
     if(data.isKnob1) {
-      console.log('isKnob1');
-            console.log(data);
-
-      uniforms.knob1.value = data.velocity;
+      this.midiBinding[data.note].knob1Value = data.velocity;
 
     } else if(data.isKnob2) {
       console.log('isKnob2');
@@ -116,7 +116,7 @@ class Sketch {
   }
 
   setRenderSequence(data) {
-    const target = this.effects[data.note];
+    const target = this.midiBinding[data.note];
 
     if (data.velocity && this.renderArray.indexOf(target) === -1) {
       this.renderArray.unshift(target);

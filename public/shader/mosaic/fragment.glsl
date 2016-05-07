@@ -1,8 +1,8 @@
 precision mediump float;
 
 uniform sampler2D texture;
+uniform float mosaicSize;
 varying vec2 vUv;
-const float mosaicSize = 100.0;
 
 void main() {
   vec2 uv = floor(vUv * mosaicSize) / mosaicSize;

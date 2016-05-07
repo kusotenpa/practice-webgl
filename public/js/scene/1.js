@@ -13,22 +13,43 @@ export default class Scene1 {
 
     this.mMatrix = mat4.create();
     this.mvpMatrix = mat4.create();
+    this.renderType = [gl.TRIANGLES, gl.POINTS, gl.LINES, gl.LINE_STRIP, gl.LINE_LOOP];
   }
 
 
-  render(tmpMatrix, resolution) {
+  render(tmpMatrix, resolution, time) {
     gl.useProgram(this.triangle.prg);
 
     ww.clear();
 
-    mat4.identity(this.mMatrix);
-    // mat4.translate(this.mMatrix, this.mMatrix, [1.0, 0, 2.3]);
-    mat4.mul(this.mvpMatrix, tmpMatrix, this.mMatrix);
+    gl.bindVertexArray(this.triangle.vao);
 
+
+    mat4.identity(this.mMatrix);
+    mat4.translate(this.mMatrix, this.mMatrix, [(Math.random() * 3 - 1.5) / 2, 0, 0]);
+    mat4.rotate(this.mMatrix, this.mMatrix, Math.random() * 360 * Math.PI / 180, [1, 1, 1]);
+    mat4.scale(this.mMatrix, this.mMatrix, [Math.random() * 4, Math.random() * 4, Math.random() * 4]);
+    mat4.mul(this.mvpMatrix, tmpMatrix, this.mMatrix);
     gl.uniformMatrix4fv(this.triangle.uniLocation.mvpMatrix, false, this.mvpMatrix);
     gl.uniform2fv(this.triangle.uniLocation.resolution, resolution);
-    gl.bindVertexArray(this.triangle.vao);
-    gl.drawElements(gl.TRIANGLES, this.triangle.index.length, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(this.renderType[4], this.triangle.index.length, gl.UNSIGNED_SHORT, 0);
+
+    for (let i = 0; i < 15000; i+= 2) {
+      mat4.identity(this.mMatrix);
+      mat4.translate(this.mMatrix, this.mMatrix, [Math.cos(i + time) * Math.cos(time / 4000) * 4, Math.sin(i + time) * Math.sin(time / 4000) * 4, 0]);
+      mat4.rotate(this.mMatrix, this.mMatrix, Math.random() * 360 * Math.PI / 180, [1, 1, 1]);
+      mat4.scale(this.mMatrix, this.mMatrix, [Math.random() * 0.5, Math.random() * 0.5, Math.random() * 0.5]);
+      mat4.mul(this.mvpMatrix, tmpMatrix, this.mMatrix);
+      gl.uniformMatrix4fv(this.triangle.uniLocation.mvpMatrix, false, this.mvpMatrix);
+      gl.uniform2fv(this.triangle.uniLocation.resolution, resolution);
+      gl.drawElements(this.renderType[1], this.triangle.index.length, gl.UNSIGNED_SHORT, 0);
+    }
+
+
+
+
+
+
     gl.bindVertexArray(null);
     gl.bindTexture(gl.TEXTURE_2D, null);
   }
