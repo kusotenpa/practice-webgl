@@ -10,21 +10,30 @@ import Scene1 from './scene/1';
 
 const ww = new Webgl();
 const gl = ww.gl;
+
 const grayScale = new GrayScale(ww.createPlane({
   vs: glslify('../shader/gray-scale/vertex.glsl'),
   fs: glslify('../shader/gray-scale/fragment.glsl')
 }));
+
 const mosaic = new Mosaic(ww.createPlane({
   vs: glslify('../shader/mosaic/vertex.glsl'),
   fs: glslify('../shader/mosaic/fragment.glsl')
-}, {uniLocation: ['mosaicSize']}));
-const noise = new Noise(ww.createPlane(
-{
+}, {uniforms: ['mosaicSize']}));
+
+const noise = new Noise(ww.createPlane({
   vs: glslify('../shader/noise/vertex.glsl'),
   fs: glslify('../shader/noise/fragment.glsl')
-}, {uniLocation: ['time', 'noiseValue']}));
+}, {uniforms: ['time', 'noiseValue']}));
+
+
 
 const scene1 = new Scene1();
+
+// const scene2 = new Scene2(ww.createPlane({
+//   vs: glslify('../shader/2/1/vertex.glsl'),
+//   fs: glslify('../shader/2/1/fragment.glsl'),
+// }, {textureOption: gl.FLOAT}));
 
 
 class Sketch {

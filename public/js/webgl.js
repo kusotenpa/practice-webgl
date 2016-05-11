@@ -13,21 +13,31 @@ export default class Webgl {
 
 
   createPlane(shader, option) {
+    const hasOption = typeof option !== 'undefined';
     const gl = this.gl;
     const s = this._createShader(shader);
     const prg = this._createProgram(s);
+    let textureFormat;
 
-    let uniLocation = {
+    let uniforms = {
       mvpMatrix: gl.getUniformLocation(prg, 'mvpMatrix'),
       texture: gl.getUniformLocation(prg, 'texture')
     };
 
-    if(typeof option !== 'undefined' && Array.isArray(option.uniLocation) && option.uniLocation.length) {
-      let _uniLocation = {};
-      option.uniLocation.forEach(function(el, i) {
-        _uniLocation[el] = gl.getUniformLocation(prg, el);
+    if (hasOption && Array.isArray(option.uniforms) && option.uniforms.length) {
+      let _uniforms = {};
+      option.uniforms.forEach(function(el, i) {
+        _uniforms[el] = gl.getUniformLocation(prg, el);
       });
-      _.merge(uniLocation, _uniLocation);
+      _.merge(uniforms, _uniforms);
+    }
+
+    if (hasOption && option.textureFormat) {
+       textureFormat = option.textureFormat;
+
+    } else {
+       textureFormat = gl.UNSIGNED_BYTE;
+
     }
 
     const attrLocation = {
@@ -35,7 +45,7 @@ export default class Webgl {
       uv: gl.getAttribLocation(prg, 'uv')
     };
 
-    const attribute = {
+    const attributes = {
       position: {
         location: attrLocation.position,
         stride: 3,
@@ -64,24 +74,24 @@ export default class Webgl {
     ];
 
     const interleaveArray = this._createInterleaveArray({
-      position: attribute.position.data,
-      uv: attribute.uv.data
+      position: attributes.position.data,
+      uv: attributes.uv.data
     });
 
     const vao = gl.createVertexArray();
     const vbo = this._createVBO(interleaveArray);
     const ibo = this._createIBO(index, vao);
 
-    const byteLength = this._getByteLength(attribute);
-    const _buffer = this._createFrameBuffer(gl.canvas.width, gl.canvas.height);
+    const byteLength = this._getByteLength(attributes);
+    const _buffer = this._createFrameBuffer(gl.canvas.width, gl.canvas.height, textureFormat);
 
     const plane = {
 
       index,
 
-      attribute,
+      attributes,
 
-      uniLocation,
+      uniforms,
 
       vao,
 
@@ -101,7 +111,7 @@ export default class Webgl {
 
     };
 
-    this._setAttribute(attribute, vao, vbo, byteLength);
+    this._setAttribute(attributes, vao, vbo, byteLength);
 
     return plane;
 
@@ -132,7 +142,7 @@ export default class Webgl {
   }
 
 
-  _createFrameBuffer(width, height) {
+  _createFrameBuffer(width, height, textureFormat) {
     const gl = this.gl;
     const frameBuffer = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
@@ -149,7 +159,7 @@ export default class Webgl {
     const frameBufferTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, frameBufferTexture);
     // fTextureにカラーのメモリ領域を確保
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, textureFormat, null);
     // テクスチャパラメタ
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -172,10 +182,10 @@ export default class Webgl {
   }
 
 
-  _getByteLength(attribute) {
+  _getByteLength(attributes) {
     let byteLength = 0;
 
-    _.each(attribute, function(value, key) {
+    _.each(attributes, function(value, key) {
       byteLength += value.stride;
     });
     // gl.FLOAT == 32bit == 4byteなので1データ4byteとして扱う
@@ -201,7 +211,7 @@ export default class Webgl {
   }
 
 
-  _setAttribute(attribute, vao, vbo, byteLength) {
+  _setAttribute(attributes, vao, vbo, byteLength) {
     const gl = this.gl;
     // float32bit === 4byte
     const BYTE = 4;
@@ -209,7 +219,7 @@ export default class Webgl {
 
     gl.bindVertexArray(vao);
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-    _.each(attribute, function(attr, key) {
+    _.each(attributes, function(attr, key) {
       // 有効化
       gl.enableVertexAttribArray(attr.location);
       // locationにbind中のvboを紐付ける
