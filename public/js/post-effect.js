@@ -1,5 +1,5 @@
-import {mat4} from './lib/gl-matrix-min';
-import Webgl from './webgl';
+import {mat4} from '~/lib/gl-matrix-min';
+import Webgl from '~/webgl';
 const glslify = require('glslify');
 const ww = new Webgl();
 const gl = ww.gl;

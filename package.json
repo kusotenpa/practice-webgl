@@ -11,10 +11,11 @@
   "license": "ISC",
   "devDependencies": {
     "babel-preset-es2015": "^6.5.0",
+    "babel-root-import": "3.2.2",
     "babelify": "^7.2.0",
     "browserify": "^13.0.0",
-    "watchify": "^3.7.0",
-    "glslify": "^5.0.2"
+    "glslify": "^5.0.2",
+    "watchify": "^3.7.0"
   },
   "browserify": {
     "transform": [
@@ -23,6 +24,11 @@
         {
           "presets": [
             "es2015"
+          ],
+          "plugins": [
+            ["babel-root-import", {
+              "rootPathSuffix": "public/js"
+            }]
           ]
         }
       ],

@@ -1,4 +1,4 @@
-import PostEffect from '../../post-effect';
+import PostEffect from '~/post-effect';
 
 export default class GrayScale extends PostEffect{
   constructor(data) {

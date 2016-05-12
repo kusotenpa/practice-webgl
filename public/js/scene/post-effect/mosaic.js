@@ -1,5 +1,5 @@
-import PostEffect from '../../post-effect';
-import Webgl from '../../webgl';
+import PostEffect from '~/post-effect';
+import Webgl from '~/webgl';
 
 const ww = new Webgl();
 const gl = ww.gl;

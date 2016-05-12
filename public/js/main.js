@@ -1,11 +1,13 @@
-import Webgl from './webgl';
-import {mat4} from './lib/gl-matrix-min';
+import Webgl from '~/webgl';
+import {mat4} from '~/lib/gl-matrix-min';
 const glslify = require('glslify');
-import Midi from './midi';
-import GrayScale from './scene/post-effect/gray-scale';
-import Mosaic from './scene/post-effect/mosaic';
-import Noise from './scene/post-effect/noise';
-import Scene1 from './scene/1';
+import Midi from '~/midi';
+import GrayScale from '~/scene/post-effect/gray-scale';
+import Mosaic from '~/scene/post-effect/mosaic';
+import Noise from '~/scene/post-effect/noise';
+import Scene1 from '~/scene/1';
+// import Scene2 from './scene/2/1';
+
 
 
 const ww = new Webgl();
@@ -25,7 +27,6 @@ const noise = new Noise(ww.createPlane({
   vs: glslify('../shader/noise/vertex.glsl'),
   fs: glslify('../shader/noise/fragment.glsl')
 }, {uniforms: ['time', 'noiseValue']}));
-
 
 
 const scene1 = new Scene1();
@@ -103,6 +104,7 @@ class Sketch {
 
   renderScene(tmpMatrix, time) {
     scene1.render(tmpMatrix, this.resolution, time);
+    // scene2.render(tmpMatrix, this.resolution, time);
   }
 
   onMidiOut(data) {
