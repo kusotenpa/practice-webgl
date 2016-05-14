@@ -11,6 +11,6 @@ export default class Mosaic extends PostEffect {
 
   setUniform() {
     if (!this.knob1Value) this.knob1Value = 0.01;
-    gl.uniform1f(this.data.uniLocation.mosaicSize, 1 / this.knob1Value * 50);
+    gl.uniform1f(this.data.uniforms.mosaicSize, 1 / this.knob1Value * 50);
   }
 }

@@ -10,7 +10,7 @@ export default class Noise extends PostEffect {
   }
 
   setUniform() {
-    gl.uniform1f(this.data.uniLocation.time, Math.random());
-    gl.uniform1f(this.data.uniLocation.noiseValue, this.knob1Value);
+    gl.uniform1f(this.data.uniforms.time, Math.random());
+    gl.uniform1f(this.data.uniforms.noiseValue, this.knob1Value);
   }
 }

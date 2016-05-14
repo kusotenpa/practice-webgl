@@ -24,15 +24,17 @@ export default class Scene1 {
 
     gl.bindVertexArray(this.triangle.vao);
 
+    for (let i = 0; i < 10; i++) {
+      mat4.identity(this.mMatrix);
+      mat4.translate(this.mMatrix, this.mMatrix, [(Math.random() * 3 - 1.5) / 2, 0, 0]);
+      mat4.rotate(this.mMatrix, this.mMatrix, Math.random() * 360 * Math.PI / 180, [1, 1, 1]);
+      mat4.scale(this.mMatrix, this.mMatrix, [Math.random() * 4, Math.random() * 4, Math.random() * 4]);
+      mat4.mul(this.mvpMatrix, tmpMatrix, this.mMatrix);
+      gl.uniformMatrix4fv(this.triangle.uniLocation.mvpMatrix, false, this.mvpMatrix);
+      gl.uniform2fv(this.triangle.uniLocation.resolution, resolution);
+      gl.drawElements(this.renderType[4], this.triangle.index.length, gl.UNSIGNED_SHORT, 0);
+    }
 
-    mat4.identity(this.mMatrix);
-    mat4.translate(this.mMatrix, this.mMatrix, [(Math.random() * 3 - 1.5) / 2, 0, 0]);
-    mat4.rotate(this.mMatrix, this.mMatrix, Math.random() * 360 * Math.PI / 180, [1, 1, 1]);
-    mat4.scale(this.mMatrix, this.mMatrix, [Math.random() * 4, Math.random() * 4, Math.random() * 4]);
-    mat4.mul(this.mvpMatrix, tmpMatrix, this.mMatrix);
-    gl.uniformMatrix4fv(this.triangle.uniLocation.mvpMatrix, false, this.mvpMatrix);
-    gl.uniform2fv(this.triangle.uniLocation.resolution, resolution);
-    gl.drawElements(this.renderType[4], this.triangle.index.length, gl.UNSIGNED_SHORT, 0);
 
     for (let i = 0; i < 15000; i+= 2) {
       mat4.identity(this.mMatrix);

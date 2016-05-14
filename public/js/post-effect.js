@@ -22,8 +22,8 @@ export default class PostEffect {
 
     this.mvpMatrix = ww.createOrtho();
 
-    gl.uniformMatrix4fv(this.data.uniLocation.mvpMatrix, false, this.mvpMatrix);
-    gl.uniform1i(this.data.uniLocation.texture, 0);
+    gl.uniformMatrix4fv(this.data.uniforms.mvpMatrix, false, this.mvpMatrix);
+    gl.uniform1i(this.data.uniforms.texture, 0);
     this.setUniform();
 
     gl.bindVertexArray(this.data.vao);
