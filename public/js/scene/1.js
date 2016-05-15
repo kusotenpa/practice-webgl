@@ -17,7 +17,27 @@ export default class Scene1 {
   }
 
 
-  render(tmpMatrix, resolution, time) {
+  hoge(time, b, changeValue, duration) {
+    // t: current time, b: begInnIng value, c: change In value, d: duration
+    var s = 1.70158;
+    var p = duration * 0.3;
+    var a = changeValue;
+
+    if ((time /= duration) == 1) return b + changeValue;
+
+    if (a < Math.abs(changeValue)) {
+      var s = p / 4;
+
+    } else {
+      var s = p / ( 2 * Math.PI) * Math.asin (1);
+
+    }
+    return - (a * Math.pow(2, 10 * (time -= 1)) * Math.sin((time * duration - s) * (2 * Math.PI) / p )) + b;
+  }
+
+
+  render(tmpMatrix, resolution, time, soundValue) {
+    soundValue /= 1000;
     gl.useProgram(this.triangle.prg);
 
     ww.clear();
@@ -28,18 +48,18 @@ export default class Scene1 {
       mat4.identity(this.mMatrix);
       mat4.translate(this.mMatrix, this.mMatrix, [(Math.random() * 3 - 1.5) / 2, 0, 0]);
       mat4.rotate(this.mMatrix, this.mMatrix, Math.random() * 360 * Math.PI / 180, [1, 1, 1]);
-      mat4.scale(this.mMatrix, this.mMatrix, [Math.random() * 4, Math.random() * 4, Math.random() * 4]);
+      mat4.scale(this.mMatrix, this.mMatrix, [Math.random() * soundValue + 0.5, Math.random() * soundValue + 0.5, Math.random() * soundValue + 0.5]);
       mat4.mul(this.mvpMatrix, tmpMatrix, this.mMatrix);
       gl.uniformMatrix4fv(this.triangle.uniLocation.mvpMatrix, false, this.mvpMatrix);
       gl.uniform2fv(this.triangle.uniLocation.resolution, resolution);
       gl.drawElements(this.renderType[4], this.triangle.index.length, gl.UNSIGNED_SHORT, 0);
     }
 
-
+    const random = Math.random() * 0.1;
     for (let i = 0; i < 15000; i+= 2) {
       mat4.identity(this.mMatrix);
-      mat4.translate(this.mMatrix, this.mMatrix, [Math.cos(i + time) * Math.cos(time / 4000) * 4, Math.sin(i + time) * Math.sin(time / 4000) * 4, 0]);
-      mat4.rotate(this.mMatrix, this.mMatrix, Math.random() * 360 * Math.PI / 180, [1, 1, 1]);
+      mat4.translate(this.mMatrix, this.mMatrix, [Math.cos(i + time) * Math.cos(time / 4000 + random) * soundValue, Math.sin(i + time) * Math.sin(time / 4000 + random) * soundValue, 0]);
+      mat4.rotate(this.mMatrix, this.mMatrix, Math.random() * 360 * Math.PI / 180, [0, 0, 0]);
       mat4.scale(this.mMatrix, this.mMatrix, [Math.random() * 0.5, Math.random() * 0.5, Math.random() * 0.5]);
       mat4.mul(this.mvpMatrix, tmpMatrix, this.mMatrix);
       gl.uniformMatrix4fv(this.triangle.uniLocation.mvpMatrix, false, this.mvpMatrix);
