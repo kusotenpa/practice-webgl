@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "preinstall": "npm i -g browserify",
+    "build": "browserify ./public/js/main.js -d -o ./dist/main.js",
     "watch": "watchify ./public/js/main.js -d -o ./dist/main.js -v"
   },
   "keywords": [],
