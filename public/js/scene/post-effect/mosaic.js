@@ -1,10 +1,10 @@
-import PostEffect from '~/post-effect';
+import Plane from '~/plane';
 import Webgl from '~/webgl';
 
 const ww = new Webgl();
 const gl = ww.gl;
 
-export default class Mosaic extends PostEffect {
+export default class Mosaic extends Plane {
   constructor(data) {
     super(data);
   }

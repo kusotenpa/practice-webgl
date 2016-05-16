@@ -1,6 +1,6 @@
-import PostEffect from '~/post-effect';
+import Plane from '~/plane';
 
-export default class GrayScale extends PostEffect{
+export default class GrayScale extends Plane{
   constructor(data) {
     super(data);
   }

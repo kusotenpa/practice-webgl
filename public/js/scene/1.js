@@ -17,25 +17,6 @@ export default class Scene1 {
   }
 
 
-  hoge(time, b, changeValue, duration) {
-    // t: current time, b: begInnIng value, c: change In value, d: duration
-    var s = 1.70158;
-    var p = duration * 0.3;
-    var a = changeValue;
-
-    if ((time /= duration) == 1) return b + changeValue;
-
-    if (a < Math.abs(changeValue)) {
-      var s = p / 4;
-
-    } else {
-      var s = p / ( 2 * Math.PI) * Math.asin (1);
-
-    }
-    return - (a * Math.pow(2, 10 * (time -= 1)) * Math.sin((time * duration - s) * (2 * Math.PI) / p )) + b;
-  }
-
-
   render(tmpMatrix, resolution, time, soundValue) {
     soundValue /= 1000;
     gl.useProgram(this.triangle.prg);

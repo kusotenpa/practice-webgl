@@ -1,6 +1,6 @@
-import PostEffect from '~/post-effect';
+import Plane from '~/plane';
 
-export default class Scene2_2 extends PostEffect{
+export default class Scene2_2 extends Plane{
   constructor(data) {
     super(data);
   }

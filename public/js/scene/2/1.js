@@ -1,6 +1,6 @@
 import Webgl from '~/webgl';
 const glslify = require('glslify');
-import PostEffect from '~/post-effect';
+import Plane from '~/plane';
 import Scene2_2 from './2';
 import Scene2_3 from './3';
 
@@ -31,7 +31,7 @@ let frontBuffer = new Scene2_3(ww.createPlane({
   }
 ));
 
-export default class Scene2_1 extends PostEffect{
+export default class Scene2_1 extends Plane{
   constructor(data) {
     super(data);
   }

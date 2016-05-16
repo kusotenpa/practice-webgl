@@ -4,7 +4,7 @@ const glslify = require('glslify');
 const ww = new Webgl();
 const gl = ww.gl;
 
-export default class PostEffect {
+export default class Plane {
   constructor(data) {
     this.data = data;
     this.mMatrix = mat4.create();
