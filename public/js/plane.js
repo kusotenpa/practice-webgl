@@ -13,7 +13,7 @@ export default class Plane {
     this.knob2Value = 0.5;
   }
 
-  render() {
+  render(option) {
     gl.useProgram(this.data.prg);
 
     ww.clear();
@@ -24,7 +24,7 @@ export default class Plane {
 
     gl.uniformMatrix4fv(this.data.uniforms.mvpMatrix, false, this.mvpMatrix);
     gl.uniform1i(this.data.uniforms.texture, 0);
-    this.setUniform();
+    this.setUniform(option);
 
     gl.bindVertexArray(this.data.vao);
     gl.drawElements(gl.TRIANGLES, this.data.index.length, gl.UNSIGNED_SHORT, 0);

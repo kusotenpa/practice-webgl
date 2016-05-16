@@ -9,7 +9,7 @@ import Noise from '~/scene/post-effect/noise';
 import NegaPosi from '~/scene/post-effect/nega-posi';
 import Scene1 from '~/scene/1';
 // import Scene2 from './scene/2/1';
-
+import Scene3 from '~/scene/3';
 
 
 const ww = new Webgl();
@@ -44,6 +44,11 @@ const scene1 = new Scene1();
 //   fs: glslify('../shader/2/1/fragment.glsl'),
 // }, {textureOption: gl.FLOAT}));
 
+const scene3 = new Scene3(ww.createPlane({
+  vs: glslify('../shader/3/vertex.glsl'),
+  fs: glslify('../shader/3/fragment.glsl'),
+}, {uniforms: ['resolution', 'time']}));
+
 
 class Sketch {
   constructor() {
@@ -69,7 +74,7 @@ class Sketch {
     // カリング有効化
     // gl.enable(gl.CULL_FACE);
 
-    sound.play();
+    // sound.play();
     this.render();
   }
 
@@ -116,6 +121,12 @@ class Sketch {
   renderScene(tmpMatrix, time, soundValue) {
     scene1.render(tmpMatrix, this.resolution, time, soundValue);
     // scene2.render(tmpMatrix, this.resolution, time);
+    scene3.render({
+      uniforms: {
+        resolution: this.resolution,
+        time
+      }
+    });
   }
 
   getSoundValue() {
